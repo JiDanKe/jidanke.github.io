@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>关于 | JiDanKe</title>
+  <title>Animator.Play的一个bug | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="关于"/>
+  <meta property="og:title" content="Animator.Play的一个bug"/>
   <meta property="og:site_name" content="JiDanKe"/>
 
   
@@ -44,29 +44,47 @@
 </nav>
 <div class="clearfix"></div></header>
   <div id="content" class="inner">
-    <div id="main-col" class="alignleft"><div id="wrapper"><article class="page">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
   
   <div class="post-content">
     <header>
       
+        <div class="icon"></div>
+        <time datetime="2015-03-24T03:43:57.000Z"><a href="/2015/03/24/a-bug-in-Animator-Play/">Mar 24 2015</a></time>
+      
       
   
-    <h1 class="title">关于</h1>
+    <h1 class="title">Animator.Play的一个bug</h1>
   
 
     </header>
     <div class="entry">
       
-        <p>Hello，很高兴在网络上相见。我是个移动终端开发工程师，每天工作是敲代码，俗称码农。</p>
-<p>我喜欢设计模式、学习模型，我认为她们非常美妙，虽然我还在探索在路上。我还喜欢美妙的旋律，尤其是钢琴的声音，是这些音符给了我无数的灵感。我仍然在寻找美妙的东西。</p>
-<p>我喜欢我的工作，因为我相信，码农正在改变世界。</p>
-
+        <p>Animator.Play方法，官方文档解释的很简单：“Plays a state”，但是实际使用中会有个问题。<br>如下，在同一帧里连续两次调用Play播放不同的动画片段：</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">animator.<span class="keyword">Play</span>(<span class="string">"animation1"</span>);  </span><br><span class="line">animator.<span class="keyword">Play</span>(<span class="string">"animation2"</span>);</span><br></pre></td></tr></table></figure>
+<p>你猜最后播放的是哪个动画？<br>我猜你猜的是animation2，兄弟我们都被坑了:P</p>
+<p>结果是animation1被播放，这有点反人类，应该是个bug。我使用的版本是Unity3D 5.0.0p1</p>
+<p>照这个结果，很多动画播放逻辑需要注意了。比如我们自己有个状态机，在这个状态机里调用Animator.Play来控制动画播放。如果在一帧内有多个状态切换，则可能会先后面状态的动画没有播放的问题。举个栗子：  </p>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="constant">Run </span>-&gt; <span class="constant">Idle</span></span><br></pre></td></tr></table></figure>
+<p>如果状态切换太快，则可能在Idle状态，却一直播放Run的动画。</p>
+<p>因为这个原因，状态切换最好放到下一帧。我们为状态机切换提供一个请求切换状态的接口，状态内部不能直接切换到下一个状态。</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//设置下一帧想要切换的状态</span></span><br><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">void</span> <span class="title">SetWishingState</span><span class="params">(State state)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//在帧的开始，切换到下一个状态</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">void</span> <span class="title">TranslateToWishingState</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
       
     </div>
     <footer>
       
         
+  
+  <div class="categories">
+    <a href="/categories/Unity3D/">Unity3D</a>
+  </div>
+
         
+  
+  <div class="tags">
+    <a href="/tags/Animator/">Animator</a>
+  </div>
+
         
   <div class="addthis addthis_toolbox addthis_default_style">
     
@@ -107,7 +125,7 @@
   }(document, 'script', 'facebook-jssdk'));
 </script>
 
-<div class="fb-comments" data-href="http://blog.jidanke.com/sample-page/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/03/24/a-bug-in-Animator-Play/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
       
   
 </section>

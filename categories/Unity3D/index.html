@@ -55,6 +55,154 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2015-03-24T03:43:57.000Z"><a href="/2015/03/24/a-bug-in-Animator-Play/">Mar 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/24/a-bug-in-Animator-Play/">Animator.Play的一个bug</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>Animator.Play方法，官方文档解释的很简单：“Plays a state”，但是实际使用中会有个问题。<br>如下，在同一帧里连续两次调用Play播放不同的动画片段：</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">animator.<span class="keyword">Play</span>(<span class="string">"animation1"</span>);  </span><br><span class="line">animator.<span class="keyword">Play</span>(<span class="string">"animation2"</span>);</span><br></pre></td></tr></table></figure>
+<p>你猜最后播放的是哪个动画？<br>我猜你猜的是animation2，兄弟我们都被坑了:P</p>
+<p>结果是animation1被播放，这有点反人类，应该是个bug。我使用的版本是Unity3D 5.0.0p1</p>
+<p>照这个结果，很多动画播放逻辑需要注意了。比如我们自己有个状态机，在这个状态机里调用Animator.Play来控制动画播放。如果在一帧内有多个状态切换，则可能会先后面状态的动画没有播放的问题。举个栗子：  </p>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="constant">Run </span>-&gt; <span class="constant">Idle</span></span><br></pre></td></tr></table></figure>
+<p>如果状态切换太快，则可能在Idle状态，却一直播放Run的动画。</p>
+<p>因为这个原因，状态切换最好放到下一帧。我们为状态机切换提供一个请求切换状态的接口，状态内部不能直接切换到下一个状态。</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//设置下一帧想要切换的状态</span></span><br><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">void</span> <span class="title">SetWishingState</span><span class="params">(State state)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//在帧的开始，切换到下一个状态</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">void</span> <span class="title">TranslateToWishingState</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/24/Unity5-animator-changes/">Unity 5 过渡控制变化</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
+<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
+<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
+<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Mar 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Unity 5动画系统问题</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="1-如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可">1.如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可</h3><h4 id="不会触发">不会触发</h4><p><img src="/images/c5868628369eb7755c4b133bed49a4b9e6428b03.jpg" alt="不会触发"></p>
+<h4 id="触发">触发</h4><p><img src="/images/d068f3cb1017fc8e3ed816b9f57dbf1f3f0bbb69.jpg" alt="触发"></p>
+<h3 id="2-_如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成">2. 如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成</h3><p><img src="/images/4729e5bafe4aec8d0563f06e97eb4df2efaebdaa.jpg" alt="延后一帧"></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-20T06:58:00.000Z"><a href="/2015/03/20/differenceBetweenCircleCastandOverlapCircle/">Mar 20 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/20/differenceBetweenCircleCastandOverlapCircle/">检测获取圆形区域内的collider对象</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>今天重构了下玩家的技能攻击实现类，把之前攻击时直接获取场景中的所有敌人再判读是否在攻击范围内来过滤改为直接获取技能攻击半径内的地方对象。由于检测两点之间是否有障碍物的时候用了：<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RaycastHit2D[] rayHits = Physics2D.LinecastAll (me.position, target.position, mask);</span><br></pre></td></tr></table></figure></p>
+<p>最开始理所当然就认为 Physics2D.CircleCastAll 应该就是检测圆形范围内的碰撞器，以至于最开始看Physics2D.CircleCastAll的参数很不理解。事实上我需要的是Physics2D.OverlapCircleAll 。</p>
+<h3 id="一、获取在一个圆的半径范围内的collider">一、获取在一个圆的半径范围内的collider</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">Collider2D [] colliders = Physics2D.OverlapCircleAll(player.position, <span class="number">1</span>f, enemyLayer);</span><br><span class="line"> <span class="keyword">if</span>(colliders.Length &gt; <span class="number">0</span>)</span><br><span class="line"> &#123;</span><br><span class="line">       <span class="comment">// enemies within 1m of the player</span></span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="二、_获取以一个点为中心的圆朝某个方向移动一定距离碰撞到的layer上的collider">二、 获取以一个点为中心的圆朝某个方向移动一定距离碰撞到的layer上的collider</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">RaycastHit2D[] hits=  Physics2D.CircleCastAll(player.position, <span class="number">1</span>f, player.right, <span class="number">10</span>f, enemyLayer);</span><br><span class="line"><span class="keyword">foreach</span>(RaycastHit2D hit <span class="keyword">in</span> hits)</span><br><span class="line">&#123;![alt text][<span class="number">1</span>]</span><br><span class="line">    ApplyDamage(hit.collider.gameObject);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="看图说话">看图说话</h3><p><img src="/images/24166795-E46D-45D3-A5A4-F7A75C266F50.jpg" alt="CircleCastAll and OverlapCircleAll"></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2015-03-19T10:54:39.000Z"><a href="/2015/03/19/Unity-BreakPoint/">Mar 19 2015</a></time>
       
       
@@ -113,7 +261,7 @@
   <h3 class="title">分類</h3>
   <ul class="entry">
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>1</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>5</small></li>
   
   </ul>
 </div>
@@ -124,7 +272,11 @@
   <h3 class="title">標籤</h3>
   <ul class="entry">
   
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
   
   </ul>
 </div>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>关于 | JiDanKe</title>
+  <title>Unity 5动画系统问题 | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="关于"/>
+  <meta property="og:title" content="Unity 5动画系统问题"/>
   <meta property="og:site_name" content="JiDanKe"/>
 
   
@@ -44,29 +44,42 @@
 </nav>
 <div class="clearfix"></div></header>
   <div id="content" class="inner">
-    <div id="main-col" class="alignleft"><div id="wrapper"><article class="page">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
   
   <div class="post-content">
     <header>
       
+        <div class="icon"></div>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Mar 24 2015</a></time>
+      
       
   
-    <h1 class="title">关于</h1>
+    <h1 class="title">Unity 5动画系统问题</h1>
   
 
     </header>
     <div class="entry">
       
-        <p>Hello，很高兴在网络上相见。我是个移动终端开发工程师，每天工作是敲代码，俗称码农。</p>
-<p>我喜欢设计模式、学习模型，我认为她们非常美妙，虽然我还在探索在路上。我还喜欢美妙的旋律，尤其是钢琴的声音，是这些音符给了我无数的灵感。我仍然在寻找美妙的东西。</p>
-<p>我喜欢我的工作，因为我相信，码农正在改变世界。</p>
+        <h3 id="1-如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可">1.如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可</h3><h4 id="不会触发">不会触发</h4><p><img src="/images/c5868628369eb7755c4b133bed49a4b9e6428b03.jpg" alt="不会触发"></p>
+<h4 id="触发">触发</h4><p><img src="/images/d068f3cb1017fc8e3ed816b9f57dbf1f3f0bbb69.jpg" alt="触发"></p>
+<h3 id="2-_如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成">2. 如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成</h3><p><img src="/images/4729e5bafe4aec8d0563f06e97eb4df2efaebdaa.jpg" alt="延后一帧"></p>
 
       
     </div>
     <footer>
       
         
+  
+  <div class="categories">
+    <a href="/categories/Unity3D/">Unity3D</a>
+  </div>
+
         
+  
+  <div class="tags">
+    <a href="/tags/Animator/">Animator</a>
+  </div>
+
         
   <div class="addthis addthis_toolbox addthis_default_style">
     
@@ -107,7 +120,7 @@
   }(document, 'script', 'facebook-jssdk'));
 </script>
 
-<div class="fb-comments" data-href="http://blog.jidanke.com/sample-page/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/03/24/Unity-5-Mecanim-Animator-problem/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
       
   
 </section>

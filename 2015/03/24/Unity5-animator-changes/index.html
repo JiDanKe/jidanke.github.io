@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>JiDanKe</title>
+  <title>Unity 5 过渡控制变化 | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  
+  <meta property="og:title" content="Unity 5 过渡控制变化"/>
   <meta property="og:site_name" content="JiDanKe"/>
 
   
@@ -50,24 +50,37 @@
     <header>
       
         <div class="icon"></div>
-        <time datetime="2015-03-19T01:52:35.000Z"><a href="/2015/03/19/Unity5-animator-changes/">Mar 19 2015</a></time>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
       
       
   
-    <h1 class="title"></h1>
+    <h1 class="title">Unity 5 过渡控制变化</h1>
   
 
     </header>
     <div class="entry">
       
-        <h1 id="过渡控制变换">过渡控制变换</h1><p><img src="/images/8BA5065A-943A-4436-8BE7-4A5E13AA7458.jpg" alt="Alt text"></p>
-<h1 id="有个大坑">有个大坑</h1>
+        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
+<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
+<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
+<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
+
       
     </div>
     <footer>
       
         
+  
+  <div class="categories">
+    <a href="/categories/Unity3D/">Unity3D</a>
+  </div>
+
         
+  
+  <div class="tags">
+    <a href="/tags/Animator/">Animator</a>
+  </div>
+
         
   <div class="addthis addthis_toolbox addthis_default_style">
     
@@ -108,7 +121,7 @@
   }(document, 'script', 'facebook-jssdk'));
 </script>
 
-<div class="fb-comments" data-href="http://blog.jidanke.com/2015/03/19/Unity5-animator-changes/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/03/24/Unity5-animator-changes/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
       
   
 </section>
@@ -127,7 +140,7 @@
   <h3 class="title">分類</h3>
   <ul class="entry">
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>1</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>5</small></li>
   
   </ul>
 </div>
@@ -138,7 +151,11 @@
   <h3 class="title">標籤</h3>
   <ul class="entry">
   
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
   
   </ul>
 </div>
