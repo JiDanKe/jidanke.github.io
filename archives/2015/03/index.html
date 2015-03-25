@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>彙整：2015/3 | JiDanKe</title>
+  <title>Архив: 2015/3 | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -46,6 +46,46 @@
   <div id="content" class="inner">
     <div id="main-col" class="alignleft"><div id="wrapper">
 <h2 class="archive-title">2015/3</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-25T03:57:51.000Z"><a href="/2015/03/25/use-collider-rules/">Mar 25 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/25/use-collider-rules/">Hero项目Collider使用梳理</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>渐渐发现随着demo的完善，Collider也越来越多，功能各不相同，一时难以弄清。故此写一篇文章梳理目前我们Collider的使用情况，备忘。</p>
+<h3 id="角色Collider">角色Collider</h3><p><img src="/images/d85b01be221e01d51d8aae9ff901ff212dc74433" alt=""></p>
+<p>Player对象里的Collider用来表示人物占用的体积，包含意义如下：<br>人物移动时，障碍物碰撞处理，避免人物走到障碍物里面的基本保证。在SimpleCharacterController2D中定义作为障碍物的Collider在哪个Layer。</p>
+<p><img src="/images/e85a67d8e5411ac7c40f60fc864637daf959e7d6" alt=""></p>
+<p>Player有个子对象TouchResponse，挂载了一个Collider组件，这个Collider用来作为接受用户点击区域。比如攻击某个敌人，识别点击这个敌人的操作。这里的规则为Tag:Touchable，即获取Tag为Touchable的对象，再从中获取relatedObject。<br>Player -&gt; Tag:Player/Enemy, Layer:Roles<br>TouchResponse -&gt; Tag:Touchable Layer:Default</p>
+<h3 id="墙、物体、动态障碍的表示">墙、物体、动态障碍的表示</h3><p>墙使用Layer:Wall来标识<br>物体(如宝箱)用Layer:Objects来标识<br>动态障碍依赖于寻路组件，需要加入DynamicObstacle组件，并且用Layer:Wall/Objects来标识。<br>Wall、Objects由寻路组件定义，如下图</p>
+<p><img src="/images/c77bd52ebf3e3a13a2b0352cb7457bd728a8f0a8" alt=""></p>
+<p>如果还有其他Collider的用途，望大家补充。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
 
 
   
@@ -252,17 +292,17 @@
     <aside id="sidebar" class="alignright">
   <div class="search">
   <form action="//google.com/search" method="get" accept-charset="utf-8">
-    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="search" name="q" results="0" placeholder="Поиск">
     <input type="hidden" name="q" value="site:blog.jidanke.com">
   </form>
 </div>
 
   
 <div class="widget tag">
-  <h3 class="title">分類</h3>
+  <h3 class="title">Категории</h3>
   <ul class="entry">
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>5</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>6</small></li>
   
   </ul>
 </div>
@@ -270,7 +310,7 @@
 
   
 <div class="widget tag">
-  <h3 class="title">標籤</h3>
+  <h3 class="title">Метки</h3>
   <ul class="entry">
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
@@ -278,6 +318,8 @@
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
   
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
   
   </ul>
 </div>

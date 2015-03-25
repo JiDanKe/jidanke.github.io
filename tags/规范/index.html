@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Unity断点调试 | JiDanKe</title>
+  <title>规范 | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="Unity断点调试"/>
+  
   <meta property="og:site_name" content="JiDanKe"/>
 
   
@@ -44,69 +44,42 @@
 </nav>
 <div class="clearfix"></div></header>
   <div id="content" class="inner">
-    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title tag">规范</h2>
+
+
+  
+    <article class="post">
   
   <div class="post-content">
     <header>
       
         <div class="icon"></div>
-        <time datetime="2015-03-19T10:54:39.000Z"><a href="/2015/03/19/Unity-BreakPoint/">Mar 19 2015</a></time>
+        <time datetime="2015-03-25T03:57:51.000Z"><a href="/2015/03/25/use-collider-rules/">Mar 25 2015</a></time>
       
       
   
-    <h1 class="title">Unity断点调试</h1>
+    <h1 class="title"><a href="/2015/03/25/use-collider-rules/">Hero项目Collider使用梳理</a></h1>
   
 
     </header>
     <div class="entry">
       
-        <p>有时候调试程序，断点信息可以很方便定位问题，Unity支持使用自带的MonoDevelop进行断点调试，但这个功能做的很不友好，经常Attach进程无响应。这里就记录一个成功率比较高的方法，避免浪费时间。</p>
-<ol>
-<li><p>打开Unity、MonoDevelop</p>
-</li>
-<li><p>在Unity中，Assets -&gt; Sync MonoDevelop Project</p>
-</li>
-<li><p>在MonoDevelop中，Run -&gt; Attach to Process…</p>
-</li>
-</ol>
-<p>选择Unity Editor (Unity)，点击Attach按钮  </p>
-<p><img src="/images/201503191901.png" alt=""></p>
-<p>这个经测试，不是每次都成功:（，如果无响应，那么请cmd+Q退出Unity和MonoDevelop，大侠请回到step1重新来过。</p>
+        <p>渐渐发现随着demo的完善，Collider也越来越多，功能各不相同，一时难以弄清。故此写一篇文章梳理目前我们Collider的使用情况，备忘。</p>
+<h3 id="角色Collider">角色Collider</h3><p><img src="/images/d85b01be221e01d51d8aae9ff901ff212dc74433" alt=""></p>
+<p>Player对象里的Collider用来表示人物占用的体积，包含意义如下：<br>人物移动时，障碍物碰撞处理，避免人物走到障碍物里面的基本保证。在SimpleCharacterController2D中定义作为障碍物的Collider在哪个Layer。</p>
+<p><img src="/images/e85a67d8e5411ac7c40f60fc864637daf959e7d6" alt=""></p>
+<p>Player有个子对象TouchResponse，挂载了一个Collider组件，这个Collider用来作为接受用户点击区域。比如攻击某个敌人，识别点击这个敌人的操作。这里的规则为Tag:Touchable，即获取Tag为Touchable的对象，再从中获取relatedObject。<br>Player -&gt; Tag:Player/Enemy, Layer:Roles<br>TouchResponse -&gt; Tag:Touchable Layer:Default</p>
+<h3 id="墙、物体、动态障碍的表示">墙、物体、动态障碍的表示</h3><p>墙使用Layer:Wall来标识<br>物体(如宝箱)用Layer:Objects来标识<br>动态障碍依赖于寻路组件，需要加入DynamicObstacle组件，并且用Layer:Wall/Objects来标识。<br>Wall、Objects由寻路组件定义，如下图</p>
+<p><img src="/images/c77bd52ebf3e3a13a2b0352cb7457bd728a8f0a8" alt=""></p>
+<p>如果还有其他Collider的用途，望大家补充。</p>
 
       
     </div>
     <footer>
       
         
-  
-  <div class="categories">
-    <a href="/categories/Unity3D/">Unity3D</a>
-  </div>
-
         
-  
-  <div class="tags">
-    <a href="/tags/Debug/">Debug</a>
-  </div>
-
-        
-  <div class="addthis addthis_toolbox addthis_default_style">
-    
-      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
-    
-    
-      <a class="addthis_button_tweet"></a>
-    
-    
-      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
-    
-    
-      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
-    
-    <a class="addthis_counter addthis_pill_style"></a>
-  </div>
-  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
-
       
       <div class="clearfix"></div>
     </footer>
@@ -114,26 +87,14 @@
 </article>
 
 
-<section id="comment">
-  <h1 class="title">Комментарии</h1>
 
   
-      <div id="fb-root"></div>
-<script>
-  (function(d, s, id) {
-    var js, fjs = d.getElementsByTagName(s)[0];
-    if (d.getElementById(id)) return;
-    js = d.createElement(s); js.id = id;
-    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
-    fjs.parentNode.insertBefore(js, fjs);
-  }(document, 'script', 'facebook-jssdk'));
-</script>
 
-<div class="fb-comments" data-href="http://blog.jidanke.com/2015/03/19/Unity-BreakPoint/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
-      
+  <nav id="pagination">
   
-</section>
-
+  
+  <div class="clearfix"></div>
+</nav>
 </div></div>
     <aside id="sidebar" class="alignright">
   <div class="search">
