@@ -72,6 +72,9 @@
 <p>Player有个子对象TouchResponse，挂载了一个Collider组件，这个Collider用来作为接受用户点击区域。比如攻击某个敌人，识别点击这个敌人的操作。这里的规则为Tag:Touchable，即获取Tag为Touchable的对象，再从中获取relatedObject。<br>Player -&gt; Tag:Player/Enemy, Layer:Roles<br>TouchResponse -&gt; Tag:Touchable Layer:Default</p>
 <h3 id="墙、物体、动态障碍的表示">墙、物体、动态障碍的表示</h3><p>墙使用Layer:Wall来标识<br>物体(如宝箱)用Layer:Objects来标识<br>动态障碍依赖于寻路组件，需要加入DynamicObstacle组件，并且用Layer:Wall/Objects来标识。<br>Wall、Objects由寻路组件定义，如下图</p>
 <p><img src="/images/c77bd52ebf3e3a13a2b0352cb7457bd728a8f0a8" alt=""></p>
+<h3 id="Tips">Tips</h3><ol>
+<li>在 Unity 3D 中 Collider 分为两大类：一类是普通 Collider，这一类可以在 3D 或者 2D 环境中使用; 另一类为 Collider 2D，一般在 2D 游戏中使用。与此对应的物理系统也分为 Physics 和 Physics 2D 两类。在进行射线（Ray）检测 Collider 碰撞时要注意 Collider 一定要和相应的物理系统匹配，比如：Collider 2D 要用 Physics 2D 发出的射线才能检测到碰撞。如果发现射线检测不到 Collider 可以检查一下 Collider 是否与物理系统相匹配。</li>
+</ol>
 <p>如果还有其他Collider的用途，望大家补充。</p>
 
       
@@ -109,7 +112,7 @@
   <h3 class="title">分類</h3>
   <ul class="entry">
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>7</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>9</small></li>
   
   </ul>
 </div>
@@ -124,7 +127,11 @@
   
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
   
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
   
     <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
   

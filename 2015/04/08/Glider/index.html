@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>彙整：2015/4 | JiDanKe</title>
+  <title>Glider | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  
+  <meta property="og:title" content="Glider"/>
   <meta property="og:site_name" content="JiDanKe"/>
 
   
@@ -44,12 +44,7 @@
 </nav>
 <div class="clearfix"></div></header>
   <div id="content" class="inner">
-    <div id="main-col" class="alignleft"><div id="wrapper">
-<h2 class="archive-title">2015/4</h2>
-
-
-  
-    <article class="post">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
   
   <div class="post-content">
     <header>
@@ -59,7 +54,7 @@
       
       
   
-    <h1 class="title"><a href="/2015/04/08/Glider/">Glider</a></h1>
+    <h1 class="title">Glider</h1>
   
 
     </header>
@@ -114,7 +109,35 @@
     <footer>
       
         
+  
+  <div class="categories">
+    <a href="/categories/Unity3D/">Unity3D</a>
+  </div>
+
         
+  
+  <div class="tags">
+    <a href="/tags/Glider/">Glider</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
       
       <div class="clearfix"></div>
     </footer>
@@ -122,83 +145,26 @@
 </article>
 
 
+<section id="comment">
+  <h1 class="title">留言</h1>
 
   
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-04-06T23:20:21.000Z"><a href="/2015/04/07/uGUI-note/">Apr 7 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/04/07/uGUI-note/">uGUI学习笔记</a></h1>
-  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
 
-    </header>
-    <div class="entry">
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/04/08/Glider/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
       
-        <p>看Unity3D文档像看国内教课书一样，一些概念，不懂的时候看还是不懂，明白了以后再看，好像也没有说错。好几个做Unity3D的朋友跟我吐槽过U3D的文档质量，相比Apple贴心的技术文档相去甚远。</p>
-<p>话虽这么说，权威的资料当然还是官方的，建议先仔细读一遍，不懂的再往下读：<br><a href="http://docs.unity3d.com/Manual/UISystem.html" target="_blank" rel="external">http://docs.unity3d.com/Manual/UISystem.html</a></p>
-<p>网上的教程大多泛泛而谈，就不吐槽了。好在还找到了一篇比较好的解读，在此谢谢作者白猫。文章链接在下面<br><a href="http://www.cnblogs.com/whitecat/p/4159815.html" target="_blank" rel="external">http://www.cnblogs.com/whitecat/p/4159815.html</a></p>
-<p>uGUI里面AutoLayout比较特别，我就此详细描述一下，希望能减少“教科书”的理解障碍。</p>
-<h1 id="RectTransform的理解">RectTransform的理解</h1><p>UI元素有专门的RectTransform组件来描述元素的几何信息，继承于Transform，Inspector中其属性如下图。</p>
-<p><img src="/images/585ba00d8b9a20380a69c5cb2ef4e9dad90bb62b.png" alt="RectTransform属性"></p>
-<h2 id="Anchors，锚点">Anchors，锚点</h2><p>我们首先需要认识Anchors。官网上的图片很好表达了Andhors的功能，请恕我实践下拿来主义。</p>
-<p><img src="/images/63d987fd54c5c5cec135c90b92d2ccc735d88190.gif" alt="锚点全在中间的情况"></p>
-<p><img src="/images/3f2a5e9f2e6b27eb58aaf7490d818158492f1d1a.gif" alt="锚点全在右下角的情况"></p>
-<p><img src="/images/164d81f4bdb29635f2db9aff5e4141104e005c60.gif" alt="锚点在两个角的情况"></p>
-<p><img src="/images/fd56ce926885f0c5a360c9e8e5e6bba9514b88bc.gif" alt="锚点分开的情况"></p>
-<p>善于观察的同学可能已经发现，不管什么情况，button的四个顶点到相应锚点的相对位置是不变的：</p>
-<p><img src="/images/dd5e601d24262b7a4c96cce3772ee9821022da0a.png" alt="规律：button的四个顶点到相应锚点的相对位置是不变的"></p>
-<p>当4个锚点都在一起的时候，RectTransform会显示Pos X，Pos Y，Width，Height四个属性可供修改。<br><img src="/images/968a79f838772208f234e3b9b58ae411414e9909.png" alt="当4个锚点都在一起"></p>
-<p>当不在一起的时候，RectTransform可调整的属性会有变化。</p>
-<p><img src="/images/3fc8baa8e7f0d0910d79b81068414bc2f47d0079.png" alt="锚点不在一起的时候，Inspector中变化1"></p>
-<p><img src="/images/451585ad80225ad3615a2f2ceffc30764e06d8a9.png" alt="锚点不在一起的时候，Inspector中变化2"></p>
-<p><img src="/images/f2fdb1def57b3a778f8685c32bf903e15cefff01.png" alt="锚点不在一起的时候，Inspector中变化3"></p>
-<p>Anchors的Min和Max分别是正规化的值(从0到1)，表示占父RectTransform的百分比，下图中AnchorMin=(0.1,0.1)  AnchorMax=(0.9,0.9)</p>
-<p><img src="/images/d3ad3d6746b850735662f220087a207d9a42d0ef.png" alt="AnchorMin、AnchorMax"></p>
-<h2 id="Pivot，UI的中心点">Pivot，UI的中心点</h2><p>UI元素的旋转和缩放是围绕pivot进行的。RectTransform组件中，Pivot属性是一个正规化的二维向量，用来描述中心点在本身矩形大小的位置。默认值为(0.5, 0.5)，即几何中心。</p>
-<p>以上是RectTransform可视化的编辑属性，实际上RectTransform类的属性是怎样的？查阅RectTransform的官方文档如下：</p>
-<p><a href="">anchoredPosition</a><br>The position of the pivot of this RectTransform relative to the anchor reference point.</p>
-<p><a href="">anchoredPosition3D</a><br>The 3D position of the pivot of this RectTransform relative to the anchor reference point.</p>
-<p><a href="">anchorMax</a><br>The normalized position in the parent RectTransform that the upper right corner is anchored to.</p>
-<p><a href="">anchorMin</a><br>The normalized position in the parent RectTransform that the lower left corner is anchored to.</p>
-<p><a href="">offsetMax</a><br>The offset of the upper right corner of the rectangle relative to the upper right anchor.</p>
-<p><a href="">offsetMin</a><br>The offset of the lower left corner of the rectangle relative to the lower left anchor.</p>
-<p><a href="">pivot</a><br>The normalized position in this RectTransform that it rotates around.</p>
-<p><a href="">rect</a><br>The calculated rectangle in the local space of the Transform.</p>
-<p><a href="">sizeDelta</a><br>The size of this RectTransform relative to the distances between the anchors.</p>
-<p>乍一看有点费解，这里有必要解释下：</p>
-<h4 id="anchoredPosition">anchoredPosition</h4><p>可以理解为Pivot点相对于Anchor reference点的位置。Anchor reference点，我是这样理解的：当四个anchors点在一起的时候，这个点就是anchor reference点；否则这四个点的中心点就是anchor reference点。<br>照这个推理，anchorMax和anchorMin的值将影响anchoredPosition的值。具体还需要demo研究来确认。[Bugfix]</p>
-<p>但可以确定的是，当一个UI元素不需要自动拉伸行为时，用anchoredPosition + sizeDelta来设置位置和大小是比较方便的方法。</p>
-<p>anchorMax、anchorMin和Inspector中的意义一致，需要注意的是，当UI元素不需要自动拉伸时，AnchorMax和AnchorMin是相等的。<br><img src="/images/ca6bd7ee124216a8f46a70cf046eac084f3d58eb.png" alt="AnchorMin与AnchorMax"></p>
-<p>UI元素需要自动拉伸时，使用anchorMax、anchorMin + offsetMax、offsetMin来设置UI的位置及大小会比较方便。<br>其中，anchorMax.x == anchorMin.x，height会自动拉伸，width固定不变。<br>anchorMax.y == anchorMin.y，width会自动拉伸，height固定不变。</p>
-<p>不知不觉已过凌晨1点，先介绍到这里。关于uGUI的更多内容，将在下一篇博文中继续，敬请期待。</p>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
   
+</section>
 
-  <nav id="pagination">
-  
-  
-  <div class="clearfix"></div>
-</nav>
 </div></div>
     <aside id="sidebar" class="alignright">
   <div class="search">
