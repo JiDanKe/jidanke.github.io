@@ -55,6 +55,69 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2015-04-13T02:42:35.000Z"><a href="/2015/04/13/Sublime-for-Unity3D/">Apr 13 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/13/Sublime-for-Unity3D/">Sublime_for_Unity3D</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>终于无法忍受MonoDeveloper的龟速，决心换一个工具作为Unity3D的代码编辑器。看身边的同事开始用Sublime，清凉快速、自动补全、内置构建、配色丰富，总之一个字，酷！</p>
+<p>于是请教余老板给配置了个同样地环境，这里记录下过程，分享给大家。</p>
+<h1 id="环境要求：">环境要求：</h1><p>已安装Unity3D<br>已安装<a href="http://www.sublimetext.com/3" target="_blank" rel="external">Sublime Text 3</a></p>
+<h1 id="步骤一：给Sublime安装PackageControl">步骤一：给Sublime安装PackageControl</h1><p>具体方法见PackageControl的<a href="https://packagecontrol.io" target="_blank" rel="external">官方网站</a>，如果已安装请跳过。</p>
+<h1 id="步骤二：为Sublime安装OmniSharp插件">步骤二：为Sublime安装OmniSharp插件</h1><p>OmniSharp<strong>只支持Sublime Text 3</strong>，请在Package Control中进行安装。</p>
+<p>菜单选择 Preferences &gt; Settings - More &gt; Syntax Specific - User</p>
+<p><img src="/images/4e00efe8f4c0be8ba100cf95a02bb048952cc12c.png" alt="OmniSharp设置.png"></p>
+<p>填入以下内容并保存</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    "<span class="attribute">auto_complete</span>": <span class="value"><span class="literal">true</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_selector</span>": <span class="value"><span class="string">"source - comment"</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_triggers</span>": <span class="value">[ &#123;"<span class="attribute">selector</span>": <span class="value"><span class="string">"source.cs"</span></span>, "<span class="attribute">characters</span>": <span class="value"><span class="string">".&lt;"</span></span>&#125; ]</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="步骤三：为Sublime安装Unity3D_Build_System插件">步骤三：为Sublime安装Unity3D Build System插件</h1><p>经测试，通过Package Control安装的这个插件在Sublime Text 3里面有问题，具体表现为Sublime的Packages目录里相关文件没有被下载，囧。<br>不过我们可以手动安装，选择菜单：Sublime Text &gt; Preferences &gt; Browse Packages…<br>在这个目录里面运行<br>git clone <a href="">https://github.com/fredpointzero/UnityBuild.git</a> “Unity3D Build System”</p>
+<p>TIPS:后面必须加的”Unity3D Build System”参数，否则不能正常运行。</p>
+<h1 id="步骤四：设置Unity3D的默认编辑器为Sublime">步骤四：设置Unity3D的默认编辑器为Sublime</h1><p><img src="/images/9b3959bc0da7d1af66af6e97e2df46b137022bb9.png" alt="设置Unity3D的默认脚本编辑器.png"></p>
+<h1 id="步骤五：创建项目的Sublime工程文件">步骤五：创建项目的Sublime工程文件</h1><ol>
+<li><p>在Sublime中，选择菜单 File &gt; Open…<br>在文件选择对话框中，打开Unity3D项目的文件夹，这时Sublime左侧会有树形目录。</p>
+</li>
+<li><p>选择菜单 Project &gt; Save Project As…<br>将sublime-project文件保存到Unity3D相应项目的根目录，并以项目名称命名。<br>例如：Unity3D项目中.Net工程文件为TestProject.sln，则保存为TestProject.sublime-project。</p>
+<blockquote>
+<p>NOTE:这里有两个sln文件，一个是xxx.sln，另一个是xxx-csharp.sln，选用前者。</p>
+</blockquote>
+</li>
+<li><p>修改sublime-project内容<br>为了更好适配Unity3D开发，我们需要设置一下sublime工程文件。</p>
+</li>
+</ol>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    "<span class="attribute">folders</span>":</span><br><span class="line">    <span class="value">[</span><br><span class="line">        &#123;</span><br><span class="line">            "<span class="attribute">file_exclude_patterns</span>":</span><br><span class="line">            <span class="value">[</span><br><span class="line">                <span class="string">"*.dll"</span>,</span><br><span class="line">                <span class="string">"*.meta"</span>,</span><br><span class="line">                <span class="string">"*.asset"</span>,</span><br><span class="line">                <span class="string">"*.unity"</span>,</span><br><span class="line">                <span class="string">"*.ttf"</span>,</span><br><span class="line">                <span class="string">"*.pdf"</span>,</span><br><span class="line">                <span class="string">"*.unitypackage"</span>,</span><br><span class="line">                <span class="string">"*.mdb"</span>,</span><br><span class="line">                <span class="string">"*.prefab"</span>,</span><br><span class="line">                <span class="string">"*.ogg"</span>,</span><br><span class="line">                <span class="string">"*.controller"</span>,</span><br><span class="line">                <span class="string">"*.anim"</span>,</span><br><span class="line">                <span class="string">"*.jar"</span>,</span><br><span class="line">                <span class="string">".*"</span></span><br><span class="line">            ]</span>,</span><br><span class="line">            "<span class="attribute">folder_exclude_patterns</span>":</span><br><span class="line">            <span class="value">[</span><br><span class="line">                <span class="string">"Fonts"</span>,</span><br><span class="line">                <span class="string">"Materials"</span>,</span><br><span class="line">                <span class="string">"NGUIAtlas"</span>,</span><br><span class="line">                <span class="string">"Prefabs"</span>,</span><br><span class="line">                <span class="string">"StreamingAssets"</span>,</span><br><span class="line">                <span class="string">"Images"</span>,</span><br><span class="line">                <span class="string">"Scenes"</span>,</span><br><span class="line">                <span class="string">".*"</span></span><br><span class="line">            ]</span>,</span><br><span class="line">            "<span class="attribute">path</span>": <span class="value"><span class="string">"Assets"</span></span>,</span><br><span class="line">            "<span class="attribute">follow_symlinks</span>": <span class="value"><span class="literal">true</span></span><br><span class="line">        </span>&#125;</span><br><span class="line">    ]</span>,</span><br><span class="line">    "<span class="attribute">solution_file</span>": <span class="value"><span class="string">"./TestProject.sln"</span></span><br><span class="line"></span>&#125;</span><br></pre></td></tr></table></figure>
+<p>将其中的TestProject.sln改为你的工程文件名。以后双击这个sublime工程文件就可以用Sublime打开工程。</p>
+<h1 id="步骤六：配置快捷键">步骤六：配置快捷键</h1><p>代码跳转等功能会比较常用，我们把快捷键配置成和MonoDeveloper中一样。<br>选择菜单：Sublime Text &gt; Package Settings &gt; OmniSharp &gt; KeyBindings User，替换成以下内容并保存(感谢余老板提供：）)。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_go_to_definition"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+d"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_rename"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_find_usages"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"shift+super+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_format_document"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+k"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_code_actions"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+enter"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_new_file"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+alt+ctrl+c"</span>]</span>, "<span class="attribute">args</span>":<span class="value">&#123;"<span class="attribute">paths</span>": <span class="value">[]</span>&#125;</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_new_file"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+alt+ctrl+i"</span>]</span>, "<span class="attribute">args</span>":<span class="value">&#123;"<span class="attribute">tmpltype</span>":<span class="value"><span class="string">"interface"</span></span>,"<span class="attribute">paths</span>": <span class="value">[]</span>&#125;</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_hide_panel"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+x"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_show_panel"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+z"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_type_lookup"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+`"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_run_unit_tests"</span></span>, "<span class="attribute">keys</span>":<span class="value">[<span class="string">"ctrl+shift+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_build_project"</span></span>, "<span class="attribute">keys</span>":<span class="value">[<span class="string">"super+alt+b"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_reload_solution"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+option+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_fix_usings"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"option+super+u"</span>]</span>&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>经过以上步骤，Sublime for Unity3D的环境就搭建完成，请自行试一下自动补全、编译等功能是否OK。这样除了断点调试，可以把MonoDeveloper晾一边了:P</p>
+<blockquote>
+<p>补充：第一次建立工程时，需要用MonoDeveloper来生成sln文件。</p>
+</blockquote>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2015-04-08T14:00:51.000Z"><a href="/2015/04/08/Glider/">Apr 8 2015</a></time>
       
       
@@ -508,7 +571,7 @@
   <h3 class="title">分類</h3>
   <ul class="entry">
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>9</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
   
   </ul>
 </div>
@@ -526,6 +589,8 @@
     <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
   
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
   
     <li><a href="/tags/UI/">UI</a><small>1</small></li>
   
