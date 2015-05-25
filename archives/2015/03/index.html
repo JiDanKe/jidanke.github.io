@@ -196,20 +196,19 @@
     <header>
       
         <div class="icon"></div>
-        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Mar 24 2015</a></time>
       
       
   
-    <h1 class="title"><a href="/2015/03/24/Unity5-animator-changes/">Unity 5 过渡控制变化</a></h1>
+    <h1 class="title"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Unity 5动画系统问题</a></h1>
   
 
     </header>
     <div class="entry">
       
-        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
-<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
-<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
-<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
+        <h3 id="1-如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可">1.如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可</h3><h4 id="不会触发">不会触发</h4><p><img src="/images/c5868628369eb7755c4b133bed49a4b9e6428b03.jpg" alt="不会触发"></p>
+<h4 id="触发">触发</h4><p><img src="/images/d068f3cb1017fc8e3ed816b9f57dbf1f3f0bbb69.jpg" alt="触发"></p>
+<h3 id="2-_如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成">2. 如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成</h3><p><img src="/images/4729e5bafe4aec8d0563f06e97eb4df2efaebdaa.jpg" alt="延后一帧"></p>
 
       
     </div>
@@ -232,19 +231,20 @@
     <header>
       
         <div class="icon"></div>
-        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Mar 24 2015</a></time>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
       
       
   
-    <h1 class="title"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Unity 5动画系统问题</a></h1>
+    <h1 class="title"><a href="/2015/03/24/Unity5-animator-changes/">Unity 5 过渡控制变化</a></h1>
   
 
     </header>
     <div class="entry">
       
-        <h3 id="1-如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可">1.如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可</h3><h4 id="不会触发">不会触发</h4><p><img src="/images/c5868628369eb7755c4b133bed49a4b9e6428b03.jpg" alt="不会触发"></p>
-<h4 id="触发">触发</h4><p><img src="/images/d068f3cb1017fc8e3ed816b9f57dbf1f3f0bbb69.jpg" alt="触发"></p>
-<h3 id="2-_如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成">2. 如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成</h3><p><img src="/images/4729e5bafe4aec8d0563f06e97eb4df2efaebdaa.jpg" alt="延后一帧"></p>
+        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
+<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
+<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
+<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
 
       
     </div>
@@ -365,6 +365,14 @@
   
     <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
   
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
   </ul>
 </div>
 
@@ -376,9 +384,19 @@
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
   
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
   
     <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
   
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
   
@@ -386,9 +404,59 @@
   
     <li><a href="/tags/UI/">UI</a><small>1</small></li>
   
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
     <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
   
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
     <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
   
   </ul>
 </div>

@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>select | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title tag">select</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T13:04:01.000Z"><a href="/2015/04/22/IOLOOP/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/22/IOLOOP/">tornado：IOLoop模块解析</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="摘要">摘要</h3><p><a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L17"><em> </em> <em> <code>ioloop.py</code> </em> <em> </em></a> 是整个tornado的核心模块，负责实现服务器的异步非阻塞机制。其中<a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L70"><strong> <code>IOLoop</code> </strong></a>类是一个基于level-triggered的I/O事件循环，它使用I/O多路复用模型（select模型）监视每个文件描述符的I/O事件是否就绪，当文件描述符I/O事件就绪后调用对应的处理器（handler）进行处理。本篇笔记是对tornado v4.0.3的 IOLoop模块的源码解析。</p>
+<h3 id="IOLoop">IOLoop</h3><p>IOLoop在Linux下使用<code>epoll</code>, 在BSD/Mac OS X下使用<code>kqueue</code>，否则使用<code>selelct</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="decorator">@classmethod</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">configurable_default</span><span class="params">(cls)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> hasattr(select, <span class="string">"epoll"</span>):</span><br><span class="line">        <span class="keyword">from</span> tornado.platform.epoll <span class="keyword">import</span> EPollIOLoop</span><br><span class="line">        <span class="keyword">return</span> EPollIOLoop</span><br><span class="line">    <span class="keyword">if</span> hasattr(select, <span class="string">"kqueue"</span>):</span><br><span class="line">        <span class="comment"># Python 2.6+ on BSD or Mac</span></span><br><span class="line">        <span class="keyword">from</span> tornado.platform.kqueue <span class="keyword">import</span> KQueueIOLoop</span><br><span class="line">        <span class="keyword">return</span> KQueueIOLoop</span><br><span class="line">    <span class="keyword">from</span> tornado.platform.select <span class="keyword">import</span> SelectIOLoop</span><br><span class="line">    <span class="keyword">return</span> SelectIOLoop</span><br></pre></td></tr></table></figure>
+<p>通过调用<a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L674"><code>add_handler</code></a>方法将一个文件描述符(v4.0中增加了对file-like object的支持)加入到I/O事件循环中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_handler</span><span class="params">(self, fd, handler, events)</span>:</span></span><br><span class="line">    <span class="string">"""Registers the given handler to receive the given events for ``fd``.</span><br><span class="line"></span><br><span class="line">    The ``fd`` argument may either be an integer file descriptor or</span><br><span class="line">    a file-like object with a ``fileno()`` method (and optionally a</span><br><span class="line">    ``close()`` method, which may be called when the `IOLoop` is shut</span><br><span class="line">    down).</span><br><span class="line"></span><br><span class="line">    The ``events`` argument is a bitwise or of the constants</span><br><span class="line">    ``IOLoop.READ``, ``IOLoop.WRITE``, and ``IOLoop.ERROR``.</span><br><span class="line"></span><br><span class="line">    When an event occurs, ``handler(fd, events)`` will be run.</span><br><span class="line"></span><br><span class="line">    .. versionchanged:: 4.0</span><br><span class="line">       Added the ability to pass file-like objects in addition to</span><br><span class="line">       raw file descriptors.</span><br><span class="line">    """</span></span><br><span class="line"></span><br><span class="line">    fd, obj = self.split_fd(fd)</span><br><span class="line">    self._handlers[fd] = (obj, stack_context.wrap(handler))</span><br><span class="line">    self._impl.register(fd, events | self.ERROR)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/22/IOLOOP/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T08:44:17.000Z"><a href="/2015/04/22/IO-strategies-server/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/22/IO-strategies-server/">基于不同I/O策略的服务器模型</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="摘要">摘要</h3><p>大多数时候我们编写的（Web）服务端程序，都是基于已有的网络服务框架或者服务器，这些服务端程序的关注点主要是处理领域业务，很少直接涉及到如何高效稳定处理与客户端的通信问题。所以，当你需要从服务端打得火热的各种框架中选择一个来开发应用程序，当你需要修改现有框架或优化现有应用，当你需要构建一个非Web网络服务程序，甚至当你需要从0到1编写一个网络服务器时，这些知识和经验还远远不够。</p>
+<p>对于网络服务器程序来说，如何处理客户端连接是其前提和基础，能够稳定地处理大量的并发连接是服务器程序最重要的性能指标。由于操作系统任务处理和I/O模型的限制，我们可用的网络服务器模型是有限的。不同的服务模型可以应对不同的环境，具有不同的优点和缺点。</p>
+<p>从操作系统任务处理的角度来看，有三种服务器模型可选：</p>
+<ul>
+<li>多进程模型</li>
+<li>多线程模型</li>
+<li>（单线程）异步模型</li>
+</ul>
+<p>以上模型的特点及其应用，可以参考一些Web服务器的设计，这里不再赘述。后续会有相关的笔记进行稍微深入的讨论。</p>
+<p>使用多进程或者多线程，其差异主要在于进程和线程的特性，所从I/O模型角度描述时我们使用线程来描述。从I/O模型的角度来看，最常用的网络服务器模型有：</p>
+<ul>
+<li>单线程阻塞I/O模型</li>
+<li>多线程阻塞I/O模型</li>
+<li>单线程非阻塞I/O模型（包括非阻塞I/O,I/O复用）</li>
+<li>单线程异步I/O模型</li>
+</ul>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/22/IO-strategies-server/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T07:35:16.000Z"><a href="/2015/04/22/mutiplexing-IO/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/22/mutiplexing-IO/">I/O 复用：select、poll和epoll</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="引言">引言</h4><p>在<strong>阻塞式I/</strong>O模型下，一个线程只能处理一个流的I/O事件，为了同时高效处理多个流，只能采用多进程（fork）或者多线程的方式。</p>
+<p>使用<strong>非阻塞I/O</strong>模型，可以通过循环遍历的方式同时处理多个流（忙轮询），但是如果所有流都没有数据，就会造成CPU的浪费（在一些服务端应用程序上便不高效）。</p>
+<p>为了避免CPU的浪费，引入一个代理（<strong>select/poll，I/O复用</strong>），这个代理能够同时监视多个流的事件，当没有流事件发生时阻塞调用线程，释放CPU资源。</p>
+<p>虽然select/poll能够同时监视多个流（描述符）事件，但是并不知道具体是哪一个流的事件发生，其实现是遍历所有的描述符，故称为无差别轮询。随着监视的描述符增多，性能会下降，并且有些系统实现里面单个进程监视的描述符数量是有最大限制的。</p>
+<p>所以有了epoll（linux）/kqueue（freebsd）/iocp（windows）的出现，不同于非阻塞式I/O的忙轮询和I/O复用的无差别轮询，epoll只在某个流事件发生时通知调用者（内核实现）。</p>
+<h4 id="select">select</h4><p>调用select告诉内核对那些描述符（就读、写或异常条件）感兴趣以及等待多长时间。感兴趣的描述符不局限于套接字，任何描述符都可以使用select来测试。以下为select的函数签名：</p>
+<img src="/2015/04/22/mutiplexing-IO/select.png">
+<p>select 函数监视的文件描述符分3类，分别是readfds、writefds和exceptfds（都是值-结果参数）。调用后select函数会阻塞，直到有描述符就绪（有数据可读、可写、或者有异常）或者超时（timeout指定等待时间， <del>如果立即返回设为null即可</del>），函数返回。当select函数返回后，可以 通过遍历fdset，来找到就绪的描述符。</p>
+<p>timeout告知内核等待所指定的描述符中的任何一个就绪可花多长时间。其timeval结构用于指定这段时间的秒数和微妙数（虽然允许指定，实际上由于操作系统内核实现的原因这个微秒级的分辨率实际上并不很精确）。<br>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/22/mutiplexing-IO/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+
+  <nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav>
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

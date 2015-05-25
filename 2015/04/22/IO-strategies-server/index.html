@@ -1,0 +1,392 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>基于不同I/O策略的服务器模型 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="基于不同I/O策略的服务器模型"/>
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T08:44:17.000Z"><a href="/2015/04/22/IO-strategies-server/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title">基于不同I/O策略的服务器模型</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="摘要">摘要</h3><p>大多数时候我们编写的（Web）服务端程序，都是基于已有的网络服务框架或者服务器，这些服务端程序的关注点主要是处理领域业务，很少直接涉及到如何高效稳定处理与客户端的通信问题。所以，当你需要从服务端打得火热的各种框架中选择一个来开发应用程序，当你需要修改现有框架或优化现有应用，当你需要构建一个非Web网络服务程序，甚至当你需要从0到1编写一个网络服务器时，这些知识和经验还远远不够。</p>
+<p>对于网络服务器程序来说，如何处理客户端连接是其前提和基础，能够稳定地处理大量的并发连接是服务器程序最重要的性能指标。由于操作系统任务处理和I/O模型的限制，我们可用的网络服务器模型是有限的。不同的服务模型可以应对不同的环境，具有不同的优点和缺点。</p>
+<p>从操作系统任务处理的角度来看，有三种服务器模型可选：</p>
+<ul>
+<li>多进程模型</li>
+<li>多线程模型</li>
+<li>（单线程）异步模型</li>
+</ul>
+<p>以上模型的特点及其应用，可以参考一些Web服务器的设计，这里不再赘述。后续会有相关的笔记进行稍微深入的讨论。</p>
+<p>使用多进程或者多线程，其差异主要在于进程和线程的特性，所从I/O模型角度描述时我们使用线程来描述。从I/O模型的角度来看，最常用的网络服务器模型有：</p>
+<ul>
+<li>单线程阻塞I/O模型</li>
+<li>多线程阻塞I/O模型</li>
+<li>单线程非阻塞I/O模型（包括非阻塞I/O,I/O复用）</li>
+<li>单线程异步I/O模型</li>
+</ul>
+<a id="more"></a>
+<p>处理大量连接的时候，基于不同I/O策略的模型具有不同的资源（尤其是RAM和CPU）消耗和限制。</p>
+<ol>
+<li><p>单线程阻塞I/O模型：最简单的模型，计算机网络发展早期使用的解决方案。也是我们学习网络编程时首先接触的例子。它使用循环的方式，遍历处理所有的连接。这种方式的问题显而易见，随着连接数的增加，低效又缓慢。</p>
+</li>
+<li><p>多线程阻塞I/O模型：这是利用多线程对 <strong>单线程阻塞I/O模型</strong> 的改进，每个线程负责监听处理一个连接。随之而来的问题是，开启销毁线程的高昂代价：线程栈对内存的需求，线程切换对CPU的需求，频繁线程切换造成的不稳定（线程抖动）。</p>
+</li>
+<li><p>单线程非阻塞I/O模型：与 <strong>单线程阻塞I/O模型</strong> 类似，循环遍历处理所有连接。只是由于非阻塞I/O的特点，内核没有可用数据时立即返回，不会阻塞线程。这样的循环轮询容易大幅度推高CPU的占用率，因此一般我们不会使用这种方式，而是引入I/O复用，当没有可用数据时将线程阻塞在代理（select/poll/epoll）调用上，占用较少的CPU资源。</p>
+</li>
+<li><p>单线程异步I/O模型：基于异步I/O的模型，我没有研究过相应的框架，不熟悉。</p>
+</li>
+</ol>
+<p>上述模式是构建服务器的基础，在实践中我们还会在此基础上会使用线程池、进程池等技术进一步优化程序。根据应用的特点，结合多种技术的优点以获得相对最优的选择。例如，<strong><em>在单线程非阻塞I/O模型下，对于I/O密集型应用和计算（CPU）密集型应用，可以有不同的处理方式。对于I/O密集型应用，直接在循环监听线程中处理即可（Node.js/Tornado）；对于计算（CPU）密集型应用，则（选择）使用多线程/进程来处理就绪的连接，避免阻塞线程对连接的监听（术语叫event based，Nginx/Apache Event模式）</em></strong>。</p>
+<p>以上关于服务器模型的选择，先入为主，大而化之地说了结论。对在实践中如何选择，应该注意什么问题没有做深入的说明。Dan Kegel在<a href="http://www.kegel.com/c10k.html" target="_blank" rel="external">《The C10K problem》</a>的 “I/O Strategies” 章节中做了详细而深入的论述，这篇比价的后续内容就是对这节的摘要，更详细的内容请参考原文（虽然现在面临的不止C10K，但其理论依然很重要）。</p>
+<h3 id="I/O_策略">I/O 策略</h3><p>基于不同I/O策略，实现网络服务器时一般需要考虑下列问题：</p>
+<ol>
+<li><p>是否需要在单个线程中处理多个I/O调用？</p>
+<ul>
+<li><p>不处理，始终使用同步阻塞I/O（blocking/synchronous）调用，使用多进程和多线程来实现并发支持；</p>
+</li>
+<li><p>使用非阻塞I/O调用读取I/O，当I/O完成时发出通知（如selelct，poll，/dev/poll）从而开始下一个I/O。这种I/O主要用于网络I/O上而不是磁盘I/O上；</p>
+</li>
+<li><p>使用异步I/O，当I/O完成时会发出通知（AIO/IOCP，异步I/O或完成端口），可以同时使用在网络和磁盘I/O上。</p>
+</li>
+</ul>
+</li>
+</ol>
+<ol>
+<li><p>如何控制对每个客户端的服务？</p>
+<ul>
+<li>对每一个客户端使用一个进程（经典的UNIX方法，从1980年一直使用）；</li>
+<li><p>一个系统级线程处理多个客户端，每个客户端是如下一种：</p>
+<ul>
+<li><p>a user-level thread (e.g. GNU state threads, classic Java with green threads)：用户级线程（比如GNU状态线程，JAVA绿色线程【一种虚拟机级别的线程，和本地操作系统线程不是一一对应的关系】）</p>
+</li>
+<li><p>a state machine (a bit esoteric, but popular in some circles; my favorite)：状态机（有点复杂）</p>
+</li>
+<li><p>a continuation (a bit esoteric, but popular in some circles)</p>
+</li>
+</ul>
+</li>
+<li><p>一个系统级线程对应一个客户端（比如JAVA中的本地线程）</p>
+</li>
+<li><p>一个系统级的线程对应每一个活动的客户端(比如 Tomcat with apache front end; NT完成端口; 线程池)</p>
+</li>
+</ul>
+</li>
+<li><p>是使用标准的操作系统服务还是把一些代码放入内核（比如自定义驱动，内核模块，VxD）</p>
+</li>
+</ol>
+<p>综合对上述问题的考虑，平常主要用到下面5中服务器模型：</p>
+<ol>
+<li>一个线程服务多个客户端，使用非阻塞I/O和水平触发的就绪通知</li>
+<li>一个线程服务多个客户端，使用非阻塞I/O和就绪改变时通知（或者边缘触发的就绪通知）</li>
+<li>一个线程服务多个客户端，使用异步I/O</li>
+<li>一个线程服务一个客户端，使用阻塞I/O</li>
+<li>把服务代码编译进内核</li>
+</ol>
+<h4 id="一个线程服务多个客户端，使用非阻塞I/O和水平触发的就绪通知">一个线程服务多个客户端，使用非阻塞I/O和水平触发的就绪通知</h4><p>传统模型，使用select/poll，在此模型下由内核告知某个描述符已经准备就绪（“水平触发”模式，只要不处理事件，就会一直有通知。相对的是“边缘触发”，在Jonathon Lemon <a href="http://people.freebsd.org/~jlemon/papers/kqueue.pdf" target="_blank" rel="external">关于kqueue()的论文</a>中介绍了这两个术语）。</p>
+<p>这种模型在磁盘I/O操作时会有一个问题，当页不在内存中或者内存映射磁盘文件时，设置不阻塞标识是没有效果的。</p>
+<p>在非阻塞套接字的集合中，关于单一线程是如何告知哪个套接字准备就绪的，以下列出了几种方法：</p>
+<ul>
+<li>传统的select()<br>遗憾的是，select()受限于FD_SETSIZE个句柄。该限制被编译进了标准库和用户程序（有些版本的C library允许你在用户程序编译时放宽该限制）。</li>
+</ul>
+<ul>
+<li><p>传统的poll()<br>poll()虽然没有文件描述符个数的硬编码限制，但是当有数千个时速度就会变得很慢，因为 大多数的文件描述符在某个时间是空闲的，彻底扫描数千个描述符是需要花费一定时间的。<br>有些操作系统（如Solaris 8）通过使用了poll hinting技术改进了poll()，该技术由Niels Provos在1999年实现并利用基准测试程序测试过。</p>
+</li>
+<li><p>/dev/poll<br>  这是在Solaris中被推荐的代替poll的方法。</p>
+<p>  /dev/poll的背后思想就是利用poll()在大部分的调用时使用相同的参数。使用/dev/poll时 ，首先打开/dev/poll得到文件描述符，然后把你关心的文件描述符写入到/dev/poll的描述符， 然后你就可以从/dev/poll的描述符中读取到已就绪的文件描述符。</p>
+<p>  /dev/poll 在Solaris 7(see patchid 106541) 中就已经存在，不过在Solaris 8 中才公开现身。在750个客户端的情况下，this has 10% of the overhead of poll()。<br>  关于/dev/poll在Linux上有多种不同的尝试实现，但是没有一种可以和epoll相比，不推荐在 Linux上使用/dev/poll。</p>
+</li>
+<li><p>kqueue()<br>这是在FreeBSD系统上推荐使用的代替poll的方法(and, soon, NetBSD)。<br><strong><em>kqueue()即可以水平触发，也可以边缘触发。</em></strong></p>
+</li>
+</ul>
+<h4 id="一个线程服务多个客户端，使用非阻塞I/O和就绪改变时通知（或者边缘触发的就绪通知）">一个线程服务多个客户端，使用非阻塞I/O和就绪改变时通知（或者边缘触发的就绪通知）</h4><p>Readiness change notification（或边缘触发就绪通知）的意思就是当你给内核一个文件描述符，一段时间后，如果该文件描述符从没有就绪到已经准备就绪，那么内核就会发出通知，告知该文件描述符已经就绪，<strong><em>并且不会再对该描述符发出类似的就绪通知直到你在描述符上进行一些操作使得该描述符不再就绪</em></strong>（如直到在send，recv或者accept等调用上遇到EWOULDBLOCK错误，或者发送/接收了少于需要的字节数）。</p>
+<p>由以下一些方法来支持，描述符已经准备就绪通知：</p>
+<ul>
+<li><p>kqueue()<br>FreeBSD 4.3及以后版本，NetBSD（2002.10）都支持 kqueue()/kevent()， 支持边沿触发和水平触发（请查看Jonathan Lemon 的网页和他的BSDCon 2000关于kqueue的论文）。</p>
+<p>就像/dev/poll一样，你分配一个监听对象，不过不是打开文件/dev/poll，而是调用kqueue ()来获得。需要改变你所监听的事件或者获得当前事件的列表，可以在kqueue()返回的描述符上 调用kevent()来达到目的。它不仅可以监听套接字，还可以监听普通的文件的就绪，信号和I/O完 成的事件也可以。</p>
+</li>
+</ul>
+<ul>
+<li>epoll()<br>这是Linux 2.6的内核中推荐使用的边沿触发poll。</li>
+</ul>
+<ul>
+<li>Realtime Signals实时信号（略，具体请参考资料）</li>
+<li>Signal-per-fd（略，具体请参看资料）</li>
+</ul>
+<h4 id="一个线程服务多个客户端，使用异步I/O">一个线程服务多个客户端，使用异步I/O</h4><p>该方法目前还没有在Unix上普遍的使用，可能因为很少的操作系统支持异步I/O，或者因为它需要重新修改应用程序(rethinking your applications)。 在标准Unix下，异步I/O是由“aio_”接口 提供的，它把一个信号和值与每一个I/O操作关联起来。信号和其值的队列被有效地分配到用户的 进程上。异步I/O是POSIX 1003.1b实时标准的扩展，也属于Single Unix Specification,version 2.</p>
+<p>AIO使用的是边缘触发的完成时通知，例如，当一个操作完成时信号就被加入队列（也可以使用“水平触发”的完成时通知，通过调用aio_suspend()即可， 不过我想很少人会这么做）。</p>
+<p><strong><em>注意AIO并没有提供无阻塞的为磁盘I/O打开文件的方法，如果你在意因打开磁盘文件而引起 sleep的话，Linus建议 你在另外一个线程中调用open()而不是把希望寄托在对aio_open()系统调用上。</em></strong></p>
+<p>在Windows下，异步I/O与术语“重叠I/O”和“IOCP”(I/O Completion Port,I/O完成端口)有一定联系。Microsoft的IOCP结合了先前的如异步I/O(如aio_write)的技术，把事件完成的通知进行排队(就像使用了aio_sigevent字段的aio_write),并且它为了保持单一IOCP线程的数量从而阻止了一部分请求。</p>
+<h4 id="一个线程服务一个客户端，使用阻塞I/O">一个线程服务一个客户端，使用阻塞I/O</h4><p>让read()和write()阻塞. 这样不好的地方在于需要为每个客户端使用一个完整的线程栈，从而比较浪费内存。 许多操作系统仍在处理数百个线程时存在一定的问题。如果每个线程使用2MB的栈，那么当你在32位的机器上运行 512（2^30 / 2^21=512）个线程时，你就会用光所有的1GB的用户可访问虚拟内存（Linux也是一样运行在x86上的）。你可以减小每个线程所拥有的栈内存大小，但是由于大部分线程库在一旦线程创建后就不能增大线程栈大小，所以这样做就意味着你必须使你的程序最小程度地使用内存。当然你也可以把你的程序运行在64位的处理器上去。</p>
+<p>Linux，FreeBSD和Solaris系统的线程库一直在更新，64位的处理器也已经开始在大部分的用户中所使用。 也许在不远的将来，这些喜欢使用一个线程来服务一个客户端的人也有能力服务于10000个客户了。 但是在目前，如果你想支持更多的客户，你最好还是使用其它的方法。</p>
+<p><strong>Note: 1:1 threading vs. M:N threading</strong></p>
+<p><strong>在实现线程库的时候有一个选择就是你可以把所有的线程支持都放到内核中（也就是所谓的1：1的模型），也可以 把一些线程移到用户空间上去（也就是所谓的M：N模型）。从某个角度来说, M:N被认为拥有更好的性能，但是由于很难被正确的编写， 所以大部分人都远离了该方法。</strong></p>
+<ul>
+<li><a href="http://marc.theaimsgroup.com/?l=linux-kernel&amp;m=103284879216107&amp;%20w=2" target="_blank" rel="external">为什么Ingo Molnar相对于M：N更喜欢1：1</a></li>
+<li><a href="http://java.sun.com/docs/hotspot/threads/threads.html" target="_blank" rel="external">Sun改为1：1的模型</a></li>
+<li><a href="http://www-124.ibm.com/pthreads/" target="_blank" rel="external">NGPT</a>是Linux下的M：N线程库.</li>
+<li>Although <a href="http://people.redhat.com/drepper/glibcthreads.html" target="_blank" rel="external">Ulrich Drepper计划在新的glibc线程库中使用M：N的模型</a>, 但是还是<a href="http://people.redhat.com/drepper/nptl-design.pdf" target="_blank" rel="external">选用了1：1的模型</a>.</li>
+<li><a href="http://developer.apple.com/technotes/tn/tn2028.html#MacOSXThreading" target="_blank" rel="external">MacOSX 也将使用1：1的线程.</a></li>
+<li><a href="http://people.freebsd.org/~julian/" target="_blank" rel="external">FreeBSD</a> 和 <a href="http://web.mit.edu/nathanw/www/usenix/freenix-sa/" target="_blank" rel="external">NetBSD</a> 仍然将使用M：N线程，FreeBSD 7.0也倾向于使用1：1的线程（见上面描述），可能M：N线程的拥护者最后证明它是错误的。</li>
+</ul>
+<h4 id="把服务代码编译进内核">把服务代码编译进内核</h4><p>Novell和Microsoft都宣称已经在不同时期完成了该工作，至少NFS的实现完成了该工作。 khttpd在Linux下为静态web页面完成了该工作， Ingo Molnar完成了”TUX” (Threaded linUX webserver) ，这是一个Linux下的快速的可扩展的内核空间的HTTP服务器。 Ingo在2000.9.1宣布 alpha版本的TUX可以在 ftp://ftp.redhat.com/pub/redhat/tux下载, 并且介绍了如何加入其邮件列表来获取更多信息。</p>
+<p>在Linux内核的邮件列表上讨论了该方法的好处和缺点，多数人认为不应该把web服务器放进内核中，相反内核加入最小的钩子hooks来提高web服务器的性能，这样对其它形式的服务器就有益。 具体请看 Zach Brown的讨论 对比用户级别和内核的http服务器。在2.4的linux内核中为用户程序提供了足够的权限（power），就像X15 服务器运行的速度和TUX几乎一样，但是它没有对内核做任何改变。</p>
+<h3 id="参考资料">参考资料</h3><ol>
+<li><p>Dan Kegel <a href="http://www.kegel.com/c10k.html" target="_blank" rel="external">《The C10K problem》</a> 原文， 中文译文参考 <a href="http://www.cnblogs.com/fll/archive/2008/05/17/1201540.html" target="_blank" rel="external">http://www.cnblogs.com/fll/archive/2008/05/17/1201540.html</a>。</p>
+</li>
+<li><p>顾 锋磊, <a href="http://www.ibm.com/developerworks/cn/linux/l-cn-edntwk/" target="_blank" rel="external">使用事件驱动模型实现高效稳定的网络服务器程序</a></p>
+</li>
+<li><p>Martin C. Brown, <a href="http://www.ibm.com/developerworks/cn/aix/library/au-libev/" target="_blank" rel="external">使用libevent和libev提高程序的网络性能</a></p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/服务端基础/">服务端基础</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/C10K/">C10K</a>, <a href="/tags/I-O复用/">I/O复用</a>, <a href="/tags/epoll/">epoll</a>, <a href="/tags/poll/">poll</a>, <a href="/tags/select/">select</a>, <a href="/tags/服务器模型/">服务器模型</a>, <a href="/tags/阻塞/">阻塞</a>, <a href="/tags/非阻塞/">非阻塞</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/04/22/IO-strategies-server/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

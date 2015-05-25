@@ -55,6 +55,319 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2015-04-24T11:14:21.000Z"><a href="/2015/04/24/closures/">Apr 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/24/closures/">闭包(closures)</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="1-_摘要">1. 摘要</h3><p>一直以来，闭包这种编程结构都是一些语言的重要组成部分。在某些场景中使用闭包能够优雅地解决一些棘手的问题。同时闭包的使用有益于模块化编程，它能以简单的方式开发较小的模块，从而提高开发速度和程序的可复用性。</p>
+<p>闭包是一门十分有用的技术，但是由于在C#中函数不是一等公民（First-class citizen）的原因，以前在使用C#的时候我没有深入地去关注其中对闭包的支持。而最近一段时间由于工作需要，主要使用 javascript/python 进行开发，在这两种编程语言中函数都是被视为一等对象，实践中大量使用闭包简化编程。例如在javascript中使用闭包模拟对象实例，在python中利用闭包的特性定义功能强大的装饰器等等。</p>
+<p>对于这样一门技术，仅仅会使用不是目的，知其然而知其所以然才是。这篇笔记即是出于这样一种目的而整理的。相比较而言我只对C#、javascript、python比较熟悉，而三者中javascript对闭包的支持相对纯粹和完备，所以笔记中我主要用javascript语言表述。但是涉及具体语言的部分，也使用C#和python语言表述，比如对 “闭包陷阱” 的解决，python受限制的闭包实现。</p>
+<p>注：笔记相关的代码，主要的目的是描述问题，所以我并没有一一运行过，不能确保都是正确的。但这不影响相关内容。</p>
+<h3 id="2-_闭包，匿名函数，函数对象，自由变量，好乱的样子">2. 闭包，匿名函数，函数对象，自由变量，好乱的样子</h3><p>在（一般的）编程语言中，局部变量的作用域仅限于包含它们的函数，脱离了创建它的函数环境后便无法被访问到。但在一些支持嵌套定义函数的语言中，如果内部的函数引用了外部的函数的变量，则可能延长变量的生命周期。例如下面的javascript代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span><span class="params">(x)</span></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> i = x * <span class="number">2</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span><span class="params">(y)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> i+y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> f1 = foo(<span class="number">1</span>);</span><br><span class="line"><span class="keyword">var</span> f2 = foo(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">print(f1(<span class="number">2</span>)); <span class="comment">// 4</span></span><br><span class="line">print(f2(<span class="number">2</span>)); <span class="comment">// 6</span></span><br></pre></td></tr></table></figure>
+<p>外部 foo 函数执行后返回了foo内部定义的匿名函数，以及不在该内部函数中定义的外部变量i。即使离开了创建i的函数环境，我们依然能够通过f1，f2访问到i。这就是一个典型的闭包（Closure）。</p>
+<p>其实闭包并不是一个新概念，而是早在上个世纪60年代高级语言发展初期就已经产生。那么究竟闭包是什么呢？按照维基百科闭包的解释，一般我们有两种定义：</p>
+<ol>
+<li><p>在计算机科学中，闭包（Closure）是词法闭包（Lexical Closure）的简称，指的是引用了自由变量的函数（<em>自由变量指定的除去函数局部变量之外的其他变量，比如前面例子中的变量i</em>）。</p>
+</li>
+<li><p>另一种说法认为闭包是由函数和相关的引用环境组合而成的实体。</p>
+</li>
+</ol>
+<p>从定义上可以看出，这两种对闭包的定义具有完全不同的关注点。对于第一种定义，强调的是闭包是函数，是一类特殊的函数。第二种定义认为闭包是函数和引用环境组成的实体，本质上不再是函数，而是函数对象，能够作为对象使用的函数。术语 <strong>first class function</strong> 是对这个概念的精确描述。函数本质上只是一些可执行的代码，一旦被定义好以后就不会发生变化，没有状态，具有引用的透明性。闭包作为函数对象，可以由同一个函数与不同的引用环境组成不同的实例，有状态，没有引用的透明性，所以闭包不再是单纯的函数。</p>
+<p>从理解的角度的来说，第二种定义更为精确和利于理解。</p>
+<p><strong><em>注：匿名函数与闭包是不同概念，在一般支持闭包的语言中都支持匿名函数，匿名函数可以让我们更容易实现闭包。</em></strong></p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/24/closures/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T13:04:01.000Z"><a href="/2015/04/22/IOLOOP/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/22/IOLOOP/">tornado：IOLoop模块解析</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="摘要">摘要</h3><p><a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L17"><em> </em> <em> <code>ioloop.py</code> </em> <em> </em></a> 是整个tornado的核心模块，负责实现服务器的异步非阻塞机制。其中<a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L70"><strong> <code>IOLoop</code> </strong></a>类是一个基于level-triggered的I/O事件循环，它使用I/O多路复用模型（select模型）监视每个文件描述符的I/O事件是否就绪，当文件描述符I/O事件就绪后调用对应的处理器（handler）进行处理。本篇笔记是对tornado v4.0.3的 IOLoop模块的源码解析。</p>
+<h3 id="IOLoop">IOLoop</h3><p>IOLoop在Linux下使用<code>epoll</code>, 在BSD/Mac OS X下使用<code>kqueue</code>，否则使用<code>selelct</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="decorator">@classmethod</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">configurable_default</span><span class="params">(cls)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> hasattr(select, <span class="string">"epoll"</span>):</span><br><span class="line">        <span class="keyword">from</span> tornado.platform.epoll <span class="keyword">import</span> EPollIOLoop</span><br><span class="line">        <span class="keyword">return</span> EPollIOLoop</span><br><span class="line">    <span class="keyword">if</span> hasattr(select, <span class="string">"kqueue"</span>):</span><br><span class="line">        <span class="comment"># Python 2.6+ on BSD or Mac</span></span><br><span class="line">        <span class="keyword">from</span> tornado.platform.kqueue <span class="keyword">import</span> KQueueIOLoop</span><br><span class="line">        <span class="keyword">return</span> KQueueIOLoop</span><br><span class="line">    <span class="keyword">from</span> tornado.platform.select <span class="keyword">import</span> SelectIOLoop</span><br><span class="line">    <span class="keyword">return</span> SelectIOLoop</span><br></pre></td></tr></table></figure>
+<p>通过调用<a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L674"><code>add_handler</code></a>方法将一个文件描述符(v4.0中增加了对file-like object的支持)加入到I/O事件循环中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_handler</span><span class="params">(self, fd, handler, events)</span>:</span></span><br><span class="line">    <span class="string">"""Registers the given handler to receive the given events for ``fd``.</span><br><span class="line"></span><br><span class="line">    The ``fd`` argument may either be an integer file descriptor or</span><br><span class="line">    a file-like object with a ``fileno()`` method (and optionally a</span><br><span class="line">    ``close()`` method, which may be called when the `IOLoop` is shut</span><br><span class="line">    down).</span><br><span class="line"></span><br><span class="line">    The ``events`` argument is a bitwise or of the constants</span><br><span class="line">    ``IOLoop.READ``, ``IOLoop.WRITE``, and ``IOLoop.ERROR``.</span><br><span class="line"></span><br><span class="line">    When an event occurs, ``handler(fd, events)`` will be run.</span><br><span class="line"></span><br><span class="line">    .. versionchanged:: 4.0</span><br><span class="line">       Added the ability to pass file-like objects in addition to</span><br><span class="line">       raw file descriptors.</span><br><span class="line">    """</span></span><br><span class="line"></span><br><span class="line">    fd, obj = self.split_fd(fd)</span><br><span class="line">    self._handlers[fd] = (obj, stack_context.wrap(handler))</span><br><span class="line">    self._impl.register(fd, events | self.ERROR)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/22/IOLOOP/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T08:44:17.000Z"><a href="/2015/04/22/IO-strategies-server/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/22/IO-strategies-server/">基于不同I/O策略的服务器模型</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="摘要">摘要</h3><p>大多数时候我们编写的（Web）服务端程序，都是基于已有的网络服务框架或者服务器，这些服务端程序的关注点主要是处理领域业务，很少直接涉及到如何高效稳定处理与客户端的通信问题。所以，当你需要从服务端打得火热的各种框架中选择一个来开发应用程序，当你需要修改现有框架或优化现有应用，当你需要构建一个非Web网络服务程序，甚至当你需要从0到1编写一个网络服务器时，这些知识和经验还远远不够。</p>
+<p>对于网络服务器程序来说，如何处理客户端连接是其前提和基础，能够稳定地处理大量的并发连接是服务器程序最重要的性能指标。由于操作系统任务处理和I/O模型的限制，我们可用的网络服务器模型是有限的。不同的服务模型可以应对不同的环境，具有不同的优点和缺点。</p>
+<p>从操作系统任务处理的角度来看，有三种服务器模型可选：</p>
+<ul>
+<li>多进程模型</li>
+<li>多线程模型</li>
+<li>（单线程）异步模型</li>
+</ul>
+<p>以上模型的特点及其应用，可以参考一些Web服务器的设计，这里不再赘述。后续会有相关的笔记进行稍微深入的讨论。</p>
+<p>使用多进程或者多线程，其差异主要在于进程和线程的特性，所从I/O模型角度描述时我们使用线程来描述。从I/O模型的角度来看，最常用的网络服务器模型有：</p>
+<ul>
+<li>单线程阻塞I/O模型</li>
+<li>多线程阻塞I/O模型</li>
+<li>单线程非阻塞I/O模型（包括非阻塞I/O,I/O复用）</li>
+<li>单线程异步I/O模型</li>
+</ul>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/22/IO-strategies-server/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T07:35:16.000Z"><a href="/2015/04/22/mutiplexing-IO/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/22/mutiplexing-IO/">I/O 复用：select、poll和epoll</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="引言">引言</h4><p>在<strong>阻塞式I/</strong>O模型下，一个线程只能处理一个流的I/O事件，为了同时高效处理多个流，只能采用多进程（fork）或者多线程的方式。</p>
+<p>使用<strong>非阻塞I/O</strong>模型，可以通过循环遍历的方式同时处理多个流（忙轮询），但是如果所有流都没有数据，就会造成CPU的浪费（在一些服务端应用程序上便不高效）。</p>
+<p>为了避免CPU的浪费，引入一个代理（<strong>select/poll，I/O复用</strong>），这个代理能够同时监视多个流的事件，当没有流事件发生时阻塞调用线程，释放CPU资源。</p>
+<p>虽然select/poll能够同时监视多个流（描述符）事件，但是并不知道具体是哪一个流的事件发生，其实现是遍历所有的描述符，故称为无差别轮询。随着监视的描述符增多，性能会下降，并且有些系统实现里面单个进程监视的描述符数量是有最大限制的。</p>
+<p>所以有了epoll（linux）/kqueue（freebsd）/iocp（windows）的出现，不同于非阻塞式I/O的忙轮询和I/O复用的无差别轮询，epoll只在某个流事件发生时通知调用者（内核实现）。</p>
+<h4 id="select">select</h4><p>调用select告诉内核对那些描述符（就读、写或异常条件）感兴趣以及等待多长时间。感兴趣的描述符不局限于套接字，任何描述符都可以使用select来测试。以下为select的函数签名：</p>
+<img src="/2015/04/22/mutiplexing-IO/select.png">
+<p>select 函数监视的文件描述符分3类，分别是readfds、writefds和exceptfds（都是值-结果参数）。调用后select函数会阻塞，直到有描述符就绪（有数据可读、可写、或者有异常）或者超时（timeout指定等待时间， <del>如果立即返回设为null即可</del>），函数返回。当select函数返回后，可以 通过遍历fdset，来找到就绪的描述符。</p>
+<p>timeout告知内核等待所指定的描述符中的任何一个就绪可花多长时间。其timeval结构用于指定这段时间的秒数和微妙数（虽然允许指定，实际上由于操作系统内核实现的原因这个微秒级的分辨率实际上并不很精确）。<br>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/22/mutiplexing-IO/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-21T15:28:43.000Z"><a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/">Apr 21 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/">同步、异步与阻塞、非阻塞，UNIX I/O模型</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="1_同步与异步">1 同步与异步</h4><p>同步和异步关注点是<strong>消息通信机制</strong> (synchronous communication/ asynchronous communication)，是一种编程模型。</p>
+<ul>
+<li><p>在同步模型下，由消息的处理者主动去等待消息的提供者。也就是说在发出一个“调用”后，在没有得到结果之前，该“调用”就不返回，但是一旦调用返回，就得到了返回值。</p>
+</li>
+<li><p>在异步模型下，由消息提供者来通知处理者可以提供需要的结果（通知机制由异步实现模型来保证）。也就是说在“调用”在发出后就立即返回了，不需要等待结果，换句话说，调用者不会立刻得到结果。“被调用者”有结果提供时会主动通知调用者（一般通过状态更新(如.NET APM)或者回调函数(如Node.js,Tornado)的形式）。</p>
+</li>
+</ul>
+<p>举个通俗的例子：</p>
+<blockquote>
+<p>你打电话问书店老板有没有《分布式系统》这本书，如果是同步通信机制，书店老板会说，“你稍等，我查一下”，然后开始查啊查，等查好了（可能是5秒，也可能是一天）告诉你结果（返回结果）。而异步通信机制，书店老板直接告诉你我查一下啊，查好了打电话给你，然后直接挂电话了（不返回结果）。然后查好了，他会主动打电话给你。在这里老板通过“回电”这种方式来回调。</p>
+</blockquote>
+<h4 id="2_阻塞与非阻塞">2 阻塞与非阻塞</h4><p>阻塞和非阻塞关注的是<strong>线程在等待调用结果（消息、结果）时的状态。</strong></p>
+<ul>
+<li><p>阻塞调用是指调用结果返回之前，当前线程做不了其他事情（<strong><em>被挂起或者自旋</em></strong>），调用线程只有在得到结果之后才会返回。</p>
+</li>
+<li><p>非阻塞调用指在不能立刻得到结果之前，该调用不会阻塞当前线程（例如返回一个结果代理对象或者错误码）。</p>
+</li>
+</ul>
+<p>还是上面的例子</p>
+<blockquote>
+<p>你打电话问书店老板有没有《分布式系统》这本书，你如果是阻塞式调用，你会一直把自己“挂起”，直到得到这本书有没有的结果，如果是非阻塞式调用，你不管老板有没有告诉你，你自己先一边去玩了， 当然你也要偶尔过几分钟check一下老板有没有返回结果。</p>
+</blockquote>
+<p><strong>在这里阻塞与非阻塞与是否同步异步无关</strong>，跟老板通过什么方式回答你结果无关。</p>
+<h4 id="3_UNIX_I/O模型">3 UNIX I/O模型</h4><p>在<a href="http://book.douban.com/subject/1500149/">《UNIX网络编程卷I》</a>第6章中定义如下几种I/O模型：</p>
+<ul>
+<li>阻塞式I/O模型（blocking I/O）</li>
+<li>非阻塞式I/O模型（noblocking I/O）</li>
+<li>I/O复用（mutiplexing， select/poll/epoll）</li>
+<li>信号驱动I/O（SIGIO)</li>
+<li>异步I/O（AIO）</li>
+</ul>
+<p>通常一个输入包括两个过程：</p>
+<ol>
+<li>等待数据准备好；</li>
+<li>从内核向进程空间复制数据。</li>
+</ol>
+<p>就socket的输入操作来说，第一步就是等待所有的数据从网络中达到。当所有分组到达时，它被复制到内核中的某个缓冲区。第二步就是把数据从缓冲区复制到应用的进程缓冲区。</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-21T08:59:34.000Z"><a href="/2015/04/21/python-attribute-lookup/">Apr 21 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/21/python-attribute-lookup/">python属性查找</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="1_摘要">1 摘要</h4><p>介绍python属性查找的相关基础知识，通过底层代码的分析，详细描述了python中对象属性的查找/赋值过程以及在object和type中对描述器的不同处理。并结合这些知识，简单探寻了一下描述器在python实现中的作用。</p>
+<h4 id="2_准备">2 准备</h4><p>在详解python属性查找之前，我们先来了解一些相关的概念，以便于理解整个查找过程。</p>
+<h5 id="2-1_描述器">2.1 描述器</h5><p>描述器(descriptor )是一个有 “绑定行为” 的对象属性(object attribute)，它的访问控制被描述器协议方法重写。描述器协议的方法为：</p>
+<pre><code>descr.__get__<span class="function"><span class="params">(self, obj, type=None)</span> --&gt;</span> value
+descr.__set__<span class="function"><span class="params">(self, obj, value)</span> --&gt;</span> None
+descr.__delete__<span class="function"><span class="params">(self, obj)</span> --&gt;</span> None
+</code></pre><p>一个对象具有其中任一个方法就会成为描述器，从而在被当作<strong>对象属性</strong>时重写默认的查找行为。</p>
+<p>如果一个对象同时定义了 <strong> __get__() </strong> 和 <strong> __set__()</strong> ,它叫做资料描述器(data descriptor)。仅定义了 <strong> __get__() </strong> 的描述器叫非资料描述器(non-data descriptor, 常用于方法，当然其他用途也是可以的)。</p>
+<p>资料描述器和非资料描述器的区别在于：相对于实例的字典的优先级。如果实例字典中有与描述器同名的属性，如果描述器是资料描述器，优先使用资料描述器，如果是非资料描述器，优先使用字典中的属性。后面内容会具体介绍。</p>
+<p>描述器是强大的，应用广泛的。描述器正是属性, 实例方法, 静态方法, 类方法和 super 的背后的实现机制。描述器在Python自身中广泛使用，以实现Python 2.2中引入的新式类。描述器简化了底层的C代码，并为Python的日常编程提供了一套灵活的新工具。</p>
+<h5 id="2-2_Python方法解析顺序">2.2 Python方法解析顺序</h5><p>在支持多重继承的编程语言中，查找方法具体来自那个类时的基类搜索顺序通常被称为方法解析顺序(Method Resolution Order)，简称MRO。Python中查找属性也遵循同一规则。对于仅支持单重继承的语言，MRO非常简单。但是在支持多继承的语言中，情况就比较复杂了。Python的历史版本中先后出现三种不同的MRO：经典方式、Python2.2 新式算法、Python2.3 新式算法(也称作C3)。Python 3中只保留了最后一种，即C3算法。</p>
+<p>python2.2为解决引入新类所带来的方法解析顺序，采用的方案是在类定义时就计算出它的MRO，并存储为该类对象的一个属性 <strong> __mro__ </strong> 。然后在查找属性时按照 <strong> __mro__ </strong> 依次搜索基类。</p>
+<h5 id="2-3_metaclass">2.3 metaclass</h5><p>在大多数编程语言中，类就是一组用来描述如何生成一个对象的代码段。Python中的类还远不止如此。在python中类同样也是一种对象，只要你使用关键字class，解释器在执行的时候就会创建一个对象。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ObjectCreator</span><span class="params">(object)</span>:</span><span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<p>上面的代码会在python解释器执行的时候生成一个对象 <strong>ObjectCreator</strong>。<strong><em>这个对象（类）自身拥有创建对象（类实例）的能力，而这就是为什么它是一个类的原因。</em></strong> 创建 “类” 的 “类” 就是元类（metaclass），python默认的内建元类是type。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">&gt;&gt;&gt; </span>object.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(object)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br></pre></td></tr></table></figure>
+<p>在python中通过type(obj)，或者 obj.__class__ 来获取对象的类型（type）。这里有个特别的type的type是type。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(object)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(type)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>object.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br></pre></td></tr></table></figure>
+<p>换句话说，元类（metaclass）的实例化是类（class），类（class）的实例化是类实例对象（object）。</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/21/python-attribute-lookup/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2015-04-13T02:42:35.000Z"><a href="/2015/04/13/Sublime-for-Unity3D/">Apr 13 2015</a></time>
       
       
@@ -69,8 +382,8 @@
 <p>于是请教余老板给配置了个同样的环境，这里记录下过程，分享给大家。</p>
 <h1 id="环境要求：">环境要求：</h1><p>已安装Unity3D<br>已安装<a href="http://www.sublimetext.com/3" target="_blank" rel="external">Sublime Text 3</a></p>
 <h1 id="步骤一：给Sublime安装PackageControl">步骤一：给Sublime安装PackageControl</h1><p>具体方法见PackageControl的<a href="https://packagecontrol.io" target="_blank" rel="external">官方网站</a>，如果已安装请跳过。</p>
-<h1 id="步骤二：为Sublime安装OmniSharp插件">步骤二：为Sublime安装OmniSharp插件</h1><p>OmniSharp<strong>只支持Sublime Text 3</strong>，请在Package Control中进行安装。</p>
-<p>菜单选择 Preferences &gt; Settings - More &gt; Syntax Specific - User</p>
+<h1 id="步骤二：为Sublime安装OmniSharp插件">步骤二：为Sublime安装OmniSharp插件</h1><p>OmniSharp<strong>只支持Sublime Text 3</strong>，请在Package Control中进行安装。<br>在Sublime里按Cmd+Shift+P，输入“Install Package”，回车。在PackageControl的列表中搜索“OmniSharp”，进行安装。</p>
+<p>安装完后，菜单选择 Preferences &gt; Settings - More &gt; Syntax Specific - User</p>
 <p><img src="/images/4e00efe8f4c0be8ba100cf95a02bb048952cc12c.png" alt="OmniSharp设置.png"></p>
 <p>填入以下内容并保存</p>
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    "<span class="attribute">auto_complete</span>": <span class="value"><span class="literal">true</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_selector</span>": <span class="value"><span class="string">"source - comment"</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_triggers</span>": <span class="value">[ &#123;"<span class="attribute">selector</span>": <span class="value"><span class="string">"source.cs"</span></span>, "<span class="attribute">characters</span>": <span class="value"><span class="string">".&lt;"</span></span>&#125; ]</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -279,6 +592,14 @@
   
     <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
   
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
   </ul>
 </div>
 
@@ -290,9 +611,19 @@
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
   
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
   
     <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
   
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
   
@@ -300,9 +631,59 @@
   
     <li><a href="/tags/UI/">UI</a><small>1</small></li>
   
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
     <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
   
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
     <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
   
   </ul>
 </div>

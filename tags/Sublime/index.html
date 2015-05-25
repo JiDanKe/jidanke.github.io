@@ -69,8 +69,8 @@
 <p>于是请教余老板给配置了个同样的环境，这里记录下过程，分享给大家。</p>
 <h1 id="环境要求：">环境要求：</h1><p>已安装Unity3D<br>已安装<a href="http://www.sublimetext.com/3" target="_blank" rel="external">Sublime Text 3</a></p>
 <h1 id="步骤一：给Sublime安装PackageControl">步骤一：给Sublime安装PackageControl</h1><p>具体方法见PackageControl的<a href="https://packagecontrol.io" target="_blank" rel="external">官方网站</a>，如果已安装请跳过。</p>
-<h1 id="步骤二：为Sublime安装OmniSharp插件">步骤二：为Sublime安装OmniSharp插件</h1><p>OmniSharp<strong>只支持Sublime Text 3</strong>，请在Package Control中进行安装。</p>
-<p>菜单选择 Preferences &gt; Settings - More &gt; Syntax Specific - User</p>
+<h1 id="步骤二：为Sublime安装OmniSharp插件">步骤二：为Sublime安装OmniSharp插件</h1><p>OmniSharp<strong>只支持Sublime Text 3</strong>，请在Package Control中进行安装。<br>在Sublime里按Cmd+Shift+P，输入“Install Package”，回车。在PackageControl的列表中搜索“OmniSharp”，进行安装。</p>
+<p>安装完后，菜单选择 Preferences &gt; Settings - More &gt; Syntax Specific - User</p>
 <p><img src="/images/4e00efe8f4c0be8ba100cf95a02bb048952cc12c.png" alt="OmniSharp设置.png"></p>
 <p>填入以下内容并保存</p>
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    "<span class="attribute">auto_complete</span>": <span class="value"><span class="literal">true</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_selector</span>": <span class="value"><span class="string">"source - comment"</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_triggers</span>": <span class="value">[ &#123;"<span class="attribute">selector</span>": <span class="value"><span class="string">"source.cs"</span></span>, "<span class="attribute">characters</span>": <span class="value"><span class="string">".&lt;"</span></span>&#125; ]</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -134,6 +134,14 @@
   
     <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
   
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
   </ul>
 </div>
 
@@ -145,9 +153,19 @@
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
   
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
   
     <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
   
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
   
@@ -155,9 +173,59 @@
   
     <li><a href="/tags/UI/">UI</a><small>1</small></li>
   
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
     <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
   
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
     <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
   
   </ul>
 </div>

@@ -1,0 +1,342 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>闭包(closures) | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="闭包(closures)"/>
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-24T11:14:21.000Z"><a href="/2015/04/24/closures/">Apr 24 2015</a></time>
+      
+      
+  
+    <h1 class="title">闭包(closures)</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="1-_摘要">1. 摘要</h3><p>一直以来，闭包这种编程结构都是一些语言的重要组成部分。在某些场景中使用闭包能够优雅地解决一些棘手的问题。同时闭包的使用有益于模块化编程，它能以简单的方式开发较小的模块，从而提高开发速度和程序的可复用性。</p>
+<p>闭包是一门十分有用的技术，但是由于在C#中函数不是一等公民（First-class citizen）的原因，以前在使用C#的时候我没有深入地去关注其中对闭包的支持。而最近一段时间由于工作需要，主要使用 javascript/python 进行开发，在这两种编程语言中函数都是被视为一等对象，实践中大量使用闭包简化编程。例如在javascript中使用闭包模拟对象实例，在python中利用闭包的特性定义功能强大的装饰器等等。</p>
+<p>对于这样一门技术，仅仅会使用不是目的，知其然而知其所以然才是。这篇笔记即是出于这样一种目的而整理的。相比较而言我只对C#、javascript、python比较熟悉，而三者中javascript对闭包的支持相对纯粹和完备，所以笔记中我主要用javascript语言表述。但是涉及具体语言的部分，也使用C#和python语言表述，比如对 “闭包陷阱” 的解决，python受限制的闭包实现。</p>
+<p>注：笔记相关的代码，主要的目的是描述问题，所以我并没有一一运行过，不能确保都是正确的。但这不影响相关内容。</p>
+<h3 id="2-_闭包，匿名函数，函数对象，自由变量，好乱的样子">2. 闭包，匿名函数，函数对象，自由变量，好乱的样子</h3><p>在（一般的）编程语言中，局部变量的作用域仅限于包含它们的函数，脱离了创建它的函数环境后便无法被访问到。但在一些支持嵌套定义函数的语言中，如果内部的函数引用了外部的函数的变量，则可能延长变量的生命周期。例如下面的javascript代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span><span class="params">(x)</span></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> i = x * <span class="number">2</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span><span class="params">(y)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> i+y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> f1 = foo(<span class="number">1</span>);</span><br><span class="line"><span class="keyword">var</span> f2 = foo(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">print(f1(<span class="number">2</span>)); <span class="comment">// 4</span></span><br><span class="line">print(f2(<span class="number">2</span>)); <span class="comment">// 6</span></span><br></pre></td></tr></table></figure>
+<p>外部 foo 函数执行后返回了foo内部定义的匿名函数，以及不在该内部函数中定义的外部变量i。即使离开了创建i的函数环境，我们依然能够通过f1，f2访问到i。这就是一个典型的闭包（Closure）。</p>
+<p>其实闭包并不是一个新概念，而是早在上个世纪60年代高级语言发展初期就已经产生。那么究竟闭包是什么呢？按照维基百科闭包的解释，一般我们有两种定义：</p>
+<ol>
+<li><p>在计算机科学中，闭包（Closure）是词法闭包（Lexical Closure）的简称，指的是引用了自由变量的函数（<em>自由变量指定的除去函数局部变量之外的其他变量，比如前面例子中的变量i</em>）。</p>
+</li>
+<li><p>另一种说法认为闭包是由函数和相关的引用环境组合而成的实体。</p>
+</li>
+</ol>
+<p>从定义上可以看出，这两种对闭包的定义具有完全不同的关注点。对于第一种定义，强调的是闭包是函数，是一类特殊的函数。第二种定义认为闭包是函数和引用环境组成的实体，本质上不再是函数，而是函数对象，能够作为对象使用的函数。术语 <strong>first class function</strong> 是对这个概念的精确描述。函数本质上只是一些可执行的代码，一旦被定义好以后就不会发生变化，没有状态，具有引用的透明性。闭包作为函数对象，可以由同一个函数与不同的引用环境组成不同的实例，有状态，没有引用的透明性，所以闭包不再是单纯的函数。</p>
+<p>从理解的角度的来说，第二种定义更为精确和利于理解。</p>
+<p><strong><em>注：匿名函数与闭包是不同概念，在一般支持闭包的语言中都支持匿名函数，匿名函数可以让我们更容易实现闭包。</em></strong></p>
+<a id="more"></a>
+<h3 id="3-_为什么我们需要闭包">3. 为什么我们需要闭包</h3><p>那为什么我们需要闭包呢？这主要是因为在支持嵌套作用域的语言中，有时不能简单直接地确定函数的引用环境。这样的语言一般具有这样的特点：</p>
+<ol>
+<li><p>函数可以嵌套定义，即在一个函数内部可以定义另一个函数。</p>
+</li>
+<li><p>函数是一阶值（first-class value），函数当作第一类对象（first-class object）——在这些语言中，函数可以被当作参数传递、也可以作为函数返回值、绑定到变量名、就像字符串、整数等简单类型。</p>
+</li>
+</ol>
+<p>还是最上面javascript的例子，我们在执行foo函数返回后，其执行上下文将失效，局部变量i的生命周期也随之结束。后面我们执行foo函数返回的匿名函数时，i不在该匿名函数的作用域范围内，看起来这无法正常工作。也就是说，该匿名函数运行时的引用环境与其定义时的引用环境不同，如果我们按照作用域规则在执行时确定一个函数的引用环境，那这个函数是不能正常工作的。</p>
+<h3 id="4-_闭包的常见用途">4. 闭包的常见用途</h3><p>在没有闭包的语言中，变量的生命周期只限于创建它的环境。但在有闭包的语言中，只要有一个闭包引用了这个变量，它就会一直存在。由于闭包的特性，所以一般有以下一些常见的用法：</p>
+<ul>
+<li><p>函数式编程语言在内部是无状态的，利用闭包可以实现封装一些状态，实现对象系统。利用同一个函数与不同的引用环境结合起来，我们可能得到不同闭包实例，在javascript中便常常利用闭包来模拟对象实例。</p>
+</li>
+<li><p>多个函数可以使用一个相同的环境，这使得它们可以通过改变那个环境相互交流。</p>
+</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">var</span> foo = (<span class="function"><span class="keyword">function</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// “闭包” 内的函数可以访问 privateFiled 变量，而 privateFiled 变量对于外部却是隐藏的。privateFiled 就像OO对象实例的私有变量一样。</span></span><br><span class="line">    <span class="keyword">var</span> privateFiled = <span class="string">"I'm a private field"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// "私有" 方法</span></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">log</span><span class="params">(msg)</span></span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(msg);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        getField: <span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 通过暴露的方法来访问 privateFiled</span></span><br><span class="line">            <span class="keyword">return</span> privateFiled;</span><br><span class="line">        &#125;,</span><br><span class="line">        setField: <span class="function"><span class="keyword">function</span> <span class="params">(value)</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 通过暴露的方法口来修改 privateFiled</span></span><br><span class="line">            privateFiled = value;</span><br><span class="line">            log(<span class="string">"set value."</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;());</span><br><span class="line"></span><br><span class="line">foo.getField (); <span class="comment">// 得到 'I'm a private field'</span></span><br><span class="line">foo.privateFiled; <span class="comment">// Type error，不能访问</span></span><br><span class="line">foo.setField (<span class="string">'a new value'</span>); <span class="comment">// 修改 privateFiled 的值</span></span><br><span class="line">foo.getField (); <span class="comment">// 得到 'a new value'</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>闭包只有在被调用时才执行操作，可用于“惰性求值”或者“延迟加载”。例如,在javascript中模拟python的xrange()函数，我们需要一个固定大小的列表，但是不提前为列表生成所有元素。</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">xrange</span><span class="params">(x)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">var</span> i = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    hasNext： <span class="function"><span class="keyword">function</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> i &lt; x;</span><br><span class="line">    &#125;,</span><br><span class="line">    next: <span class="function"><span class="keyword">function</span><span class="params">()</span> </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> i &lt; x ? (i += <span class="number">1</span>) : x;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> gen = xrange(<span class="number">10000</span>);</span><br><span class="line"><span class="keyword">while</span>(gen.hasNext())&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(gen.next());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>某些场景下，可以使用闭包对某个函数的参数提前赋值（利用高阶函数，固化已有函数的一个或多个参数，从而产生一个新的函数）。例如python中的偏函数(functools.parial)和javascript的bind函数的功能，从某种角度来看类似高级语言中的重载。</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在js中用js代码简单模拟bind函数本地代码的实现</span></span><br><span class="line"><span class="built_in">Function</span>.prototype.bind = <span class="function"><span class="keyword">function</span><span class="params">(scope)</span></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> fn = <span class="keyword">this</span>;</span><br><span class="line">    args = <span class="built_in">Array</span>.prototype.slice.call(<span class="built_in">arguments</span>, <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">()</span></span>&#123;</span><br><span class="line">        fn.apply(scope, args.concat(<span class="built_in">Array</span>.prototype.slice.call(<span class="built_in">arguments</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">// 在python中简单模拟 functools.parial 的实现</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">partial</span><span class="params">(fn, **out_kwargs)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">inner</span><span class="params">(*args, **kwargs)</span>:</span></span><br><span class="line">        <span class="keyword">for</span> k, v <span class="keyword">in</span> out_kwargs.items():</span><br><span class="line">            kwargs.setdefualt(k, v)</span><br><span class="line">        <span class="keyword">return</span> fn(*args, **kwargs)</span><br><span class="line">    <span class="keyword">return</span> inner</span><br></pre></td></tr></table></figure>
+<h3 id="5-_闭包的陷阱：在循环中创建闭包">5. 闭包的陷阱：在循环中创建闭包</h3><p>闭包的一个常见的陷阱发生于在循环中创建闭包。请看下面的js代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span><span class="params">(count)</span></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> funcs = [];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; count; i++)&#123;</span><br><span class="line">        funcs.push(<span class="function"><span class="keyword">function</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'&gt;&gt;&gt; '</span> + i);</span><br><span class="line">    &#125;)&#125;</span><br><span class="line">    <span class="keyword">return</span> funcs;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> funcs = foo(<span class="number">3</span>);</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">var</span> j=<span class="number">0</span>; j &lt;f1.length; j++) &#123;</span><br><span class="line">    funcs[j]();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>等价的C#实现代码：<br><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title">Program</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span><span class="params">(<span class="keyword">string</span>[] args)</span></span><br><span class="line">        </span>&#123;</span><br><span class="line">            Action[] funcs = Foo(<span class="number">3</span>);</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; funcs.Length; i++)</span><br><span class="line">            &#123;</span><br><span class="line">                funcs[i]();</span><br><span class="line">            &#125;</span><br><span class="line">            Console.ReadKey();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">static</span> Action[] Foo(Int32 count)</span><br><span class="line">        &#123;</span><br><span class="line">            Action[] funcs = <span class="keyword">new</span> Action[count];</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; i++)</span><br><span class="line">            &#123;</span><br><span class="line">                funcs[i] = () =&gt; Console.WriteLine(<span class="string">"&gt;&gt;&gt; &#123;0&#125;"</span>, i);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> funcs;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>由于自由变量在同一个引用环境（处于同一个作用域）的缘故，上述代码的输出将是：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; <span class="number">3</span></span><br><span class="line">&gt;&gt;&gt; <span class="number">3</span></span><br><span class="line">&gt;&gt;&gt; <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>而不是</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; <span class="number">0</span></span><br><span class="line">&gt;&gt;&gt; <span class="number">1</span></span><br><span class="line">&gt;&gt;&gt; <span class="number">2</span></span><br></pre></td></tr></table></figure>
+<p>对于有函数（方法）作用域的C#，我们只需要对上述代码略作修改，给每个自由变量不同的引用环境（不同的作用域），很容易修正这个问题（<strong><em>多说一句，在C#中闭包的实现是依靠编译器自动生成类来封装变量和函数</em></strong>）。修改后的代码如下所示：</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title">Program</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span><span class="params">(<span class="keyword">string</span>[] args)</span></span><br><span class="line">        </span>&#123;</span><br><span class="line">            Action[] funcs = Foo(<span class="number">3</span>);</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; funcs.Length; i++)</span><br><span class="line">            &#123;</span><br><span class="line">                funcs[i]();</span><br><span class="line">            &#125;</span><br><span class="line">            Console.ReadKey();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">static</span> Action[] Foo(Int32 count)</span><br><span class="line">        &#123;</span><br><span class="line">            Action[] funcs = <span class="keyword">new</span> Action[count];</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; i++)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">int</span> j = i; <span class="comment">//注意这里，运行时每次循环的j具有不同作用域</span></span><br><span class="line">                funcs[i] = () =&gt; Console.WriteLine(<span class="string">"&gt;&gt;&gt; &#123;0&#125;"</span>, j);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> funcs;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p><strong><em>但是对于javascript/python这类缺少 “块作用域” 的语言，我们便不能用C#一样的方式来解决这个问题。</em></strong>  在javascript/python中局部作用域是函数作用域，按照前述对问题的分析，我们修改后的代码如下，为每一个自由变量给予一个函数作用域：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span><span class="params">(count)</span></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> funcs = [];</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">print</span><span class="params">(j)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">()</span></span>&#123;</span><br><span class="line">            <span class="built_in">console</span>.log(<span class="string">'&gt;&gt;&gt; '</span> + j);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; count; i++)&#123;</span><br><span class="line">        funcs.push(print(i))&#125;</span><br><span class="line">    <span class="keyword">return</span> funcs;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> funcs = foo(<span class="number">3</span>);</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">var</span> j=<span class="number">0</span>; j &lt;f1.length; j++) &#123;</span><br><span class="line">    funcs[j]();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="6-_python的受限制闭包实现">6. python的受限制闭包实现</h3><p>python 的闭包有一些限制，即 <strong><em>“不能对自由变量进行赋值”</em></strong>，也就是说 python 的闭包是 <strong><em>“只读”</em></strong> 的。这么说可能不是很好理解，我们比对其他语言的实现来举一个例子来说明这个问题：</p>
+<p>现在我们要实现一个累加器函数，它能够生成累加器，即这个函数接受一个参数n，然后返回另一个函数，后者接受参数i，然后返回n增加（increment）了i后的值。</p>
+<p>javascript版本：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span> <span class="params">(n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> n += i;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> f = foo(<span class="number">1</span>);</span><br><span class="line">f(<span class="number">1</span>); <span class="comment">//2</span></span><br><span class="line">f(<span class="number">1</span>); <span class="comment">//3</span></span><br></pre></td></tr></table></figure>
+<p>等价的C#版本：</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> Func&lt;Int32, Int32&gt; Foo(Int32 n)</span><br><span class="line">&#123;</span><br><span class="line">    Func&lt;Int32, Int32&gt; ret = (i) =&gt; n += i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>参照javascript/C#的实现，你觉得可以用python去实现成这样：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">foo</span> <span class="params">(n)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">bar</span><span class="params">(i)</span>:</span></span><br><span class="line">        n = n + i</span><br><span class="line">        <span class="keyword">return</span> n</span><br><span class="line">    <span class="keyword">return</span> bar</span><br><span class="line">f = foo(<span class="number">1</span>)</span><br><span class="line">f(<span class="number">1</span>)</span><br><span class="line">f(<span class="number">1</span>)</span><br></pre></td></tr></table></figure></p>
+<p>但是上述代码运行时会抛异常：==UnboundLocalError: local variable ‘n’ referenced before assignment. == 很显然，语句 <code>n = n + i</code> 被解释器理解成为（local）局部变量n赋值。(<strong>A name that gets assigned to in a local scope (a function) is always local, unless declared otherwise. While there is the ‘global’ declaration to declare a variable global even when it is assigned to, there is no such declaration for enclosed variables — yet. In Python 3.0, there is (will be) the ‘nonlocal’ declaration that does just that.</strong>)</p>
+<p>这就是 python 中闭包的限制，不能完全支持自由变量。<br>要解决这个问题，我们不得不创造一种数据结构(a mutable container type)，来接受n的值。而且尽管Python确实支持函数数据类型，但是没有一种字面量的表示方式（literal representation）可以生成函数（除非函数体只有一个表达式），所以你需要创造一个命名函数，把它返回。最后的写法如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">foo</span> <span class="params">(n)</span>:</span></span><br><span class="line">    s = [n]</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">bar</span> <span class="params">(i)</span>:</span></span><br><span class="line">        s[<span class="number">0</span>] += i</span><br><span class="line">        <span class="keyword">return</span> s[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">return</span> bar</span><br></pre></td></tr></table></figure></p>
+<p>或者(虽然实现了功能，但是并不优雅，更像是一种hack手段)：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span> <span class="params">(self, n)</span>:</span></span><br><span class="line">        self.n = n</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__call__</span> <span class="params">(self, i)</span>:</span></span><br><span class="line">        self.n += i</span><br><span class="line">        <span class="keyword">return</span> self.n</span><br></pre></td></tr></table></figure></p>
+<h3 id="7-_参考资料">7. 参考资料</h3><ul>
+<li><p>维基百科关于 <a href="http://zh.wikipedia.org/wiki/%E9%97%AD%E5%8C%85_(%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6\" target="_blank" rel="external">闭包</a> ) 的释义；</p>
+</li>
+<li><p>维基百科关于 <a href="http://zh.wikipedia.org/wiki/%E5%8C%BF%E5%90%8D%E5%87%BD%E6%95%B0" target="_blank" rel="external">匿名函数</a> 的释义；</p>
+</li>
+<li><p>维基百科关于 <a href="http://zh.wikipedia.org/wiki/%E7%AC%AC%E4%B8%80%E7%B1%BB%E5%AF%B9%E8%B1%A1" target="_blank" rel="external">first class object</a> 的释义；</p>
+</li>
+<li><p><a href="http://www.ibm.com/developerworks/cn/linux/l-cn-closure/" target="_blank" rel="external">闭包的概念、形式与应用 (IBM DeveloperWorks)</a></p>
+</li>
+<li><p>MND <a href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide/Closures" target="_blank" rel="external">闭包（Closures）</a></p>
+</li>
+<li><p>《黑客与画家》之编程能力 <a href="http://www.paulgraham.com/icad.html" target="_blank" rel="external">Appendix: Power</a></p>
+</li>
+<li><p>stackoverflow 中相关问题 <a href="http://stackoverflow.com/questions/141642/what-limitations-have-closures-in-python-compared-to-language-x-closures" target="_blank" rel="external">What limitations have closures in Python compared to language X closures?</a>，<a href="http://stackoverflow.com/questions/111102/how-does-a-javascript-closure-work" target="_blank" rel="external">How does a javascript closure work ?</a>，<a href="http://stackoverflow.com/questions/13857/can-you-explain-closures-as-they-relate-to-python" target="_blank" rel="external">Can you explain closures (as they relate to Python)?</a></p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/编程基础/">编程基础</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/C/">C#</a>, <a href="/tags/closures/">closures</a>, <a href="/tags/first-class/">first-class</a>, <a href="/tags/javascript/">javascript</a>, <a href="/tags/python/">python</a>, <a href="/tags/函数对象/">函数对象</a>, <a href="/tags/匿名函数/">匿名函数</a>, <a href="/tags/自由变量/">自由变量</a>, <a href="/tags/闭包/">闭包</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/04/24/closures/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>python属性查找 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="python属性查找"/>
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-21T08:59:34.000Z"><a href="/2015/04/21/python-attribute-lookup/">Apr 21 2015</a></time>
+      
+      
+  
+    <h1 class="title">python属性查找</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="1_摘要">1 摘要</h4><p>介绍python属性查找的相关基础知识，通过底层代码的分析，详细描述了python中对象属性的查找/赋值过程以及在object和type中对描述器的不同处理。并结合这些知识，简单探寻了一下描述器在python实现中的作用。</p>
+<h4 id="2_准备">2 准备</h4><p>在详解python属性查找之前，我们先来了解一些相关的概念，以便于理解整个查找过程。</p>
+<h5 id="2-1_描述器">2.1 描述器</h5><p>描述器(descriptor )是一个有 “绑定行为” 的对象属性(object attribute)，它的访问控制被描述器协议方法重写。描述器协议的方法为：</p>
+<pre><code>descr.__get__<span class="function"><span class="params">(self, obj, type=None)</span> --&gt;</span> value
+descr.__set__<span class="function"><span class="params">(self, obj, value)</span> --&gt;</span> None
+descr.__delete__<span class="function"><span class="params">(self, obj)</span> --&gt;</span> None
+</code></pre><p>一个对象具有其中任一个方法就会成为描述器，从而在被当作<strong>对象属性</strong>时重写默认的查找行为。</p>
+<p>如果一个对象同时定义了 <strong> __get__() </strong> 和 <strong> __set__()</strong> ,它叫做资料描述器(data descriptor)。仅定义了 <strong> __get__() </strong> 的描述器叫非资料描述器(non-data descriptor, 常用于方法，当然其他用途也是可以的)。</p>
+<p>资料描述器和非资料描述器的区别在于：相对于实例的字典的优先级。如果实例字典中有与描述器同名的属性，如果描述器是资料描述器，优先使用资料描述器，如果是非资料描述器，优先使用字典中的属性。后面内容会具体介绍。</p>
+<p>描述器是强大的，应用广泛的。描述器正是属性, 实例方法, 静态方法, 类方法和 super 的背后的实现机制。描述器在Python自身中广泛使用，以实现Python 2.2中引入的新式类。描述器简化了底层的C代码，并为Python的日常编程提供了一套灵活的新工具。</p>
+<h5 id="2-2_Python方法解析顺序">2.2 Python方法解析顺序</h5><p>在支持多重继承的编程语言中，查找方法具体来自那个类时的基类搜索顺序通常被称为方法解析顺序(Method Resolution Order)，简称MRO。Python中查找属性也遵循同一规则。对于仅支持单重继承的语言，MRO非常简单。但是在支持多继承的语言中，情况就比较复杂了。Python的历史版本中先后出现三种不同的MRO：经典方式、Python2.2 新式算法、Python2.3 新式算法(也称作C3)。Python 3中只保留了最后一种，即C3算法。</p>
+<p>python2.2为解决引入新类所带来的方法解析顺序，采用的方案是在类定义时就计算出它的MRO，并存储为该类对象的一个属性 <strong> __mro__ </strong> 。然后在查找属性时按照 <strong> __mro__ </strong> 依次搜索基类。</p>
+<h5 id="2-3_metaclass">2.3 metaclass</h5><p>在大多数编程语言中，类就是一组用来描述如何生成一个对象的代码段。Python中的类还远不止如此。在python中类同样也是一种对象，只要你使用关键字class，解释器在执行的时候就会创建一个对象。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ObjectCreator</span><span class="params">(object)</span>:</span><span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<p>上面的代码会在python解释器执行的时候生成一个对象 <strong>ObjectCreator</strong>。<strong><em>这个对象（类）自身拥有创建对象（类实例）的能力，而这就是为什么它是一个类的原因。</em></strong> 创建 “类” 的 “类” 就是元类（metaclass），python默认的内建元类是type。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">&gt;&gt;&gt; </span>object.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(object)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br></pre></td></tr></table></figure>
+<p>在python中通过type(obj)，或者 obj.__class__ 来获取对象的类型（type）。这里有个特别的type的type是type。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(object)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(type)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>object.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br></pre></td></tr></table></figure>
+<p>换句话说，元类（metaclass）的实例化是类（class），类（class）的实例化是类实例对象（object）。</p>
+<a id="more"></a>
+<h4 id="3_属性的查找过程">3 属性的查找过程</h4><p>为了描述方便，我们假定现在要访问 b.x。x不是python内建的特殊属性。<strong>（注：如果查找的属性是一个python内建的特殊属性，直接就找到，不需要执行下面的过程！）</strong></p>
+<p>在python中属性的查找由类型的内部方法 <strong>__getattribute__()</strong> 支持。由于当b为object或者class时，<strong>__getattribute__()</strong> 对于描述器的调用方式不同，为了更好地介绍其细节，我们将查找过程按照b为object与class(为了与内建元类type区别，这里不用type而用class代替)时进行分开描述（cpython中实际对应的底层c代码实现也不同，具体细节后面会介绍）。</p>
+<h5 id="3-1_object属性的查找过程：object-__getattribute__()">3.1 object属性的查找过程：object.__getattribute__()</h5><ol>
+<li><p>沿着 <strong>type(b).__mro__</strong> 搜索基类 <strong>__dict__</strong> 中名称为 x 的属性，并将其值赋值给 <strong>descr</strong> 变量（descr默认为null）；</p>
+</li>
+<li><p>若 descr 是一个 data descriptor 则执行 <code>descr.__get__(b, type(b))</code>,并将执行结果返回，结束查找，否则进入下一步；</p>
+</li>
+<li><p>在 <strong>b.__dict__</strong> 中查找名称为 x 的属性，若找到则将其返回，结束查找，否则进入下一步；</p>
+</li>
+<li><p>若上述第2步查找失败（descr == null），则抛出 AttributeError 异常，结束查找。若descr（descr != null）是 non-data descriptor 则执行 <code>descr.__get__(b, type(b))</code>,并将执行结果返回，结束查找；否则直接返回 descr， 结束查找。</p>
+</li>
+</ol>
+<p>cpython 对应的底层实现代码： <code>PyObject_GenericGetAttr()</code> in <a href="https://hg.python.org/cpython/file/2.7/Objects/object.c" target="_blank" rel="external">Objects/object.c</a>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br></pre></td><td class="code"><pre><span class="line">PyObject *</span><br><span class="line">PyObject_GenericGetAttr(PyObject *obj, PyObject *name)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> _PyObject_GenericGetAttrWithDict(obj, name, NULL);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">PyObject *</span><br><span class="line">_PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)</span><br><span class="line">&#123;</span><br><span class="line">    PyTypeObject *tp = Py_TYPE(obj);<span class="comment">/*对象的类型*/</span></span><br><span class="line">    PyObject *descr = NULL;</span><br><span class="line">    PyObject *res = NULL;</span><br><span class="line">    descrgetfunc f;</span><br><span class="line">    Py_ssize_t dictoffset;</span><br><span class="line">    PyObject **dictptr;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!PyString_Check(name))&#123;</span><br><span class="line"><span class="preprocessor">#ifdef Py_USING_UNICODE</span></span><br><span class="line">        <span class="comment">/* The Unicode to string conversion is done here because the</span><br><span class="line">           existing tp_setattro slots expect a string object as name</span><br><span class="line">           and we wouldn't want to break those. */</span></span><br><span class="line">        <span class="keyword">if</span> (PyUnicode_Check(name)) &#123;</span><br><span class="line">            name = PyUnicode_AsEncodedString(name, NULL, NULL);</span><br><span class="line">            <span class="keyword">if</span> (name == NULL)</span><br><span class="line">                <span class="keyword">return</span> NULL;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">        &#123;</span><br><span class="line">            PyErr_Format(PyExc_TypeError,</span><br><span class="line">                         <span class="string">"attribute name must be string, not '%.200s'"</span>,</span><br><span class="line">                         Py_TYPE(name)-&gt;tp_name);</span><br><span class="line">            <span class="keyword">return</span> NULL;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">else</span></span><br><span class="line">        <span class="title">Py_INCREF</span><span class="params">(name)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tp-&gt;tp_dict == NULL) &#123;</span><br><span class="line">        <span class="keyword">if</span> (PyType_Ready(tp) &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">goto</span> done;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">if</span> 0 /* XXX this is not quite _PyType_Lookup anymore */</span></span><br><span class="line">    <span class="comment">/* Inline _PyType_Lookup*/</span></span><br><span class="line">    &#123;</span><br><span class="line">        Py_ssize_t i, n;</span><br><span class="line">        PyObject *mro, *base, *dict;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Look in tp_dict of types in MRO */</span></span><br><span class="line">        mro = tp-&gt;tp_mro;</span><br><span class="line">        assert(mro != NULL);</span><br><span class="line">        assert(PyTuple_Check(mro));</span><br><span class="line">        n = PyTuple_GET_SIZE(mro);</span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">            base = PyTuple_GET_ITEM(mro, i);</span><br><span class="line">            <span class="keyword">if</span> (PyClass_Check(base))<span class="comment">/*检查是否是metaclss*/</span></span><br><span class="line">                dict = ((PyClassObject *)base)-&gt;cl_dict;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                assert(PyType_Check(base));</span><br><span class="line">                dict = ((PyTypeObject *)base)-&gt;tp_dict;</span><br><span class="line">            &#125;</span><br><span class="line">            assert(dict &amp;&amp; PyDict_Check(dict));</span><br><span class="line">            descr = PyDict_GetItem(dict, name);</span><br><span class="line">            <span class="keyword">if</span> (descr != NULL)</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*内联_PyType_Lookup方法，可以看到其是在tp_dict中搜索*/</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">else</span></span></span><br><span class="line">    descr = _PyType_Lookup(tp, name); <span class="comment">/*沿着mro搜索基类的__dict__*/</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    Py_XINCREF(descr);</span><br><span class="line"></span><br><span class="line">    f = NULL;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*搜索到属性且为data descriptor，执行__get__(),返回执行结果，结束查找*/</span></span><br><span class="line">    <span class="keyword">if</span> (descr != NULL &amp;&amp;</span><br><span class="line">        PyType_HasFeature(descr-&gt;ob_type, Py_TPFLAGS_HAVE_CLASS)) &#123;</span><br><span class="line">        f = descr-&gt;ob_type-&gt;tp_descr_get;</span><br><span class="line">        <span class="keyword">if</span> (f != NULL &amp;&amp; PyDescr_IsData(descr)) &#123;</span><br><span class="line">            res = f(descr, obj, (PyObject *)obj-&gt;ob_type);</span><br><span class="line">            Py_DECREF(descr);</span><br><span class="line">            <span class="keyword">goto</span> done;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*移动指针到实例的__dict__，准备搜索。</span><br><span class="line">     *如果类定义了__slots__属性，则tp_dictoffset=0，</span><br><span class="line">     *详见Objects/typeobject.c中type_new方法。</span><br><span class="line">     *由于没有为实例分配__dict__空间，所以不能为实例新增属性，也节省了创建实例的内存开销。</span><br><span class="line">     *这就是__slots__的原理和效果。</span><br><span class="line">     */</span></span><br><span class="line">    <span class="keyword">if</span> (dict == NULL) &#123;</span><br><span class="line">        <span class="comment">/* Inline _PyObject_GetDictPtr */</span></span><br><span class="line">        dictoffset = tp-&gt;tp_dictoffset;</span><br><span class="line">        <span class="keyword">if</span> (dictoffset != <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (dictoffset &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                Py_ssize_t tsize;</span><br><span class="line">                size_t size;</span><br><span class="line"></span><br><span class="line">                tsize = ((PyVarObject *)obj)-&gt;ob_size;</span><br><span class="line">                <span class="keyword">if</span> (tsize &lt; <span class="number">0</span>)</span><br><span class="line">                    tsize = -tsize;</span><br><span class="line">                size = _PyObject_VAR_SIZE(tp, tsize);</span><br><span class="line"></span><br><span class="line">                dictoffset += (<span class="keyword">long</span>)size;</span><br><span class="line">                assert(dictoffset &gt; <span class="number">0</span>);</span><br><span class="line">                assert(dictoffset % SIZEOF_VOID_P == <span class="number">0</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            dictptr = (PyObject **) ((<span class="keyword">char</span> *)obj + dictoffset);</span><br><span class="line">            dict = *dictptr;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*若在实例__dict__中搜索到属性，则返回属性，结束查找。</span><br><span class="line">     * 一定要住注意这里与type.__getattribute__()的区别，在object.__dict__中找到的</span><br><span class="line">     * 属性是直接返回的，直接返回。所以如果为一个实例增加一个descriptor属性，是不会</span><br><span class="line">     * 被object.__getattribute__()执行的。</span><br><span class="line">     */</span></span><br><span class="line">    <span class="keyword">if</span> (dict != NULL) &#123;</span><br><span class="line">        Py_INCREF(dict);</span><br><span class="line">        res = PyDict_GetItem(dict, name);</span><br><span class="line">        <span class="keyword">if</span> (res != NULL) &#123;</span><br><span class="line">            Py_INCREF(res);</span><br><span class="line">            Py_XDECREF(descr);</span><br><span class="line">            Py_DECREF(dict);</span><br><span class="line">            <span class="keyword">goto</span> done;</span><br><span class="line">        &#125;</span><br><span class="line">        Py_DECREF(dict);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*沿mro搜索到的属性值若是定义了 __get__() 方法的 descriptor，</span><br><span class="line">     *则执行__get__()，返回结果，结束查找</span><br><span class="line">     */</span></span><br><span class="line">    <span class="keyword">if</span> (f != NULL) &#123;</span><br><span class="line">        res = f(descr, obj, (PyObject *)Py_TYPE(obj));</span><br><span class="line">        Py_DECREF(descr);</span><br><span class="line">        <span class="keyword">goto</span> done;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*沿mro搜索到的属性值不是descriptor，返回结果，结束查找*/</span></span><br><span class="line">    <span class="keyword">if</span> (descr != NULL) &#123;</span><br><span class="line">        res = descr;</span><br><span class="line">        <span class="comment">/* descr was already increfed above */</span></span><br><span class="line">        <span class="keyword">goto</span> done;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*沿mro也没有搜索则抛出异常，结束查找*/</span></span><br><span class="line">    PyErr_Format(PyExc_AttributeError,</span><br><span class="line">                 <span class="string">"'%.50s' object has no attribute '%.400s'"</span>,</span><br><span class="line">                 tp-&gt;tp_name, PyString_AS_STRING(name));</span><br><span class="line">  done:</span><br><span class="line">    Py_DECREF(name);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="3-2_class属性的查找过程：type-__getattribute__()">3.2 class属性的查找过程：type.__getattribute__()</h5><ol>
+<li><p>沿着 <strong>type(b).__mro__</strong> 搜索(元类)基类 <strong>__dict__</strong> 中名称为 x 的属性，并将其值赋值给 <strong>meta_atrribute</strong> 变量（meta_atrribute默认为null）；</p>
+</li>
+<li><p>若 meta<em>atrribute 是一个 data descriptor 则执行 `meta<em>atrribute.__get</em></em>(b, type(b))`,并将执行结果返回，结束查找，否则进入下一步；</p>
+</li>
+<li><p>在 <strong>b.__dict__</strong> 中查找名称为 x 的属性，若没有找到，则进入下一步。若找到，当属性为 descriptor 时执行 <code>meta_atrribute.__get__(None, b)</code>， 并将其结果返回，否则直接将属性返回，结束查找。</p>
+</li>
+<li><p>若上述第2步查找失败（meta<em>atrribute == null），则抛出 AttributeError 异常，结束查找。meta<em>atrribute（meta_atrribute != null）是 non-data descriptor 则执行 `meta_atrribute.__get</em></em>(b, type(b))`,并将执行结果返回，结束查找；否则直接返回 descr， 结束查找。</p>
+</li>
+</ol>
+<p>cpython对应的底层实现代码： <code>type_getattro()</code> in <a href="https://hg.python.org/cpython/file/2.7/Objects/typeobject.c" target="_blank" rel="external">Objects/typeobject.c</a>。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* This is similar to PyObject_GenericGetAttr(),</span><br><span class="line">   but uses _PyType_Lookup() instead of just looking in type-&gt;tp_dict. */</span></span><br><span class="line"><span class="keyword">static</span> PyObject *</span><br><span class="line">type_getattro(PyTypeObject *type, PyObject *name)</span><br><span class="line">&#123;</span><br><span class="line">    PyTypeObject *metatype = Py_TYPE(type);</span><br><span class="line">    PyObject *meta_attribute, *attribute;</span><br><span class="line">    descrgetfunc meta_get;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!PyString_Check(name)) &#123;</span><br><span class="line">        PyErr_Format(PyExc_TypeError,</span><br><span class="line">                     <span class="string">"attribute name must be string, not '%.200s'"</span>,</span><br><span class="line">                     name-&gt;ob_type-&gt;tp_name);</span><br><span class="line">        <span class="keyword">return</span> NULL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Initialize this type (we'll assume the metatype is initialized) */</span></span><br><span class="line">    <span class="keyword">if</span> (type-&gt;tp_dict == NULL) &#123;</span><br><span class="line">        <span class="keyword">if</span> (PyType_Ready(type) &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">return</span> NULL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* No readable descriptor found yet */</span></span><br><span class="line">    meta_get = NULL;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Look for the attribute in the metatype */</span></span><br><span class="line">    meta_attribute = _PyType_Lookup(metatype, name);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*如果在元类中找到对应名称的data descriptor属性，则执行 __get__()方法，</span><br><span class="line">     *将结果返回，结束查找</span><br><span class="line">     */</span></span><br><span class="line">    <span class="keyword">if</span> (meta_attribute != NULL) &#123;</span><br><span class="line">        meta_get = Py_TYPE(meta_attribute)-&gt;tp_descr_get;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (meta_get != NULL &amp;&amp; PyDescr_IsData(meta_attribute)) &#123;</span><br><span class="line">            <span class="comment">/* Data descriptors implement tp_descr_set to intercept</span><br><span class="line">             * writes. Assume the attribute is not overridden in</span><br><span class="line">             * type's tp_dict (and bases): call the descriptor now.</span><br><span class="line">             */</span></span><br><span class="line">            <span class="keyword">return</span> meta_get(meta_attribute, (PyObject *)type,</span><br><span class="line">                            (PyObject *)metatype);</span><br><span class="line">        &#125;</span><br><span class="line">        Py_INCREF(meta_attribute);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* No data descriptor found on metatype. Look in tp_dict of this</span><br><span class="line">     * type and its bases */</span></span><br><span class="line">    attribute = _PyType_Lookup(type, name);</span><br><span class="line">    <span class="keyword">if</span> (attribute != NULL) &#123;</span><br><span class="line">        <span class="comment">/* Implement descriptor functionality, if any */</span></span><br><span class="line">        descrgetfunc local_get = Py_TYPE(attribute)-&gt;tp_descr_get;</span><br><span class="line"></span><br><span class="line">        Py_XDECREF(meta_attribute);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*在类的__dict__中找到定义了  __get__() 方法的descriptor属性，则执行</span><br><span class="line">         * __get__()方法，将结果返回，结束查找。</span><br><span class="line">         *</span><br><span class="line">         * 这里与在object.__dict__中查找到属性后的处理方式不同：在object中直接</span><br><span class="line">         * 将属性属性返回；在type.__dict__中找到属性后如果属性是定义了 __get__()</span><br><span class="line">         * 方法的descriptor，要执行__get__(None, type)返回结果。</span><br><span class="line">         */</span></span><br><span class="line">        <span class="keyword">if</span> (local_get != NULL) &#123;</span><br><span class="line">            <span class="comment">/* NULL 2nd argument indicates the descriptor was</span><br><span class="line">             * found on the target object itself (or a base)  */</span></span><br><span class="line">            <span class="keyword">return</span> local_get(attribute, (PyObject *)NULL,</span><br><span class="line">                             (PyObject *)type);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*在类__dict__中找到的属性不是descriptor时，直接将属性返回，结束查找*/</span></span><br><span class="line">        Py_INCREF(attribute);</span><br><span class="line">        <span class="keyword">return</span> attribute;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">     <span class="comment">/*若前面没有在元类中找到属性，直接抛出异常，结束查找；</span><br><span class="line">      *若在元类中找到的属性不是descriptor，直接返回，结束查找。</span><br><span class="line">      *若在元类中找到的属性是non-data descriptor, 则执行 __get__()方法，</span><br><span class="line">      *将结果返回，结束查找。</span><br><span class="line">      */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* No attribute found in local __dict__ (or bases): use the</span><br><span class="line">     * descriptor from the metatype, if any */</span></span><br><span class="line">    <span class="keyword">if</span> (meta_get != NULL) &#123;</span><br><span class="line">        PyObject *res;</span><br><span class="line">        res = meta_get(meta_attribute, (PyObject *)type,</span><br><span class="line">                       (PyObject *)metatype);</span><br><span class="line">        Py_DECREF(meta_attribute);</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* If an ordinary attribute was found on the metatype, return it now */</span></span><br><span class="line">    <span class="keyword">if</span> (meta_attribute != NULL) &#123;</span><br><span class="line">        <span class="keyword">return</span> meta_attribute;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Give up */</span></span><br><span class="line">    PyErr_Format(PyExc_AttributeError,</span><br><span class="line">                     <span class="string">"type object '%.50s' has no attribute '%.400s'"</span>,</span><br><span class="line">                     type-&gt;tp_name, PyString_AS_STRING(name));</span><br><span class="line">    <span class="keyword">return</span> NULL;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h5 id="3-3_在_object-__getattribute__()_与_type-__getattribute__()_对descriptor不同处理">3.3 在 <code>object.__getattribute__()</code> 与 <code>type.__getattribute__()</code> 对descriptor不同处理</h5><p>由上面的介绍可见，<code>object.__getattribute__()</code> 与 <code>type.__getattribute__()</code>在实例字典（<code>object.__dict__, type.__dict__</code>) 找到的descriptor类型属性的处理方式不同（步骤3）。object中是直接返回，type中会用调用__get__(None, type),返回结果（注意调用的参数）。</p>
+<p>之前在阅读python描述器的时候，读到object与type的__getattribute__()方法对描述器的处理方式区别，作者用pure python代码描述了用object.__getattribute__()等价实现的type.__getaatribute__()一直不能理解。现在结合前述解析，应该很好理解了，注意代码中self实际是一个cls（type）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__getattribute__</span><span class="params">(self, key)</span>:</span></span><br><span class="line">    <span class="string">"Emulate type_getattro() in Objects/typeobject.c"</span></span><br><span class="line">    v = object.__getattribute__(self, key)</span><br><span class="line">    <span class="keyword">if</span> hasattr(v, <span class="string">'__get__'</span>):</span><br><span class="line">       <span class="keyword">return</span> v.__get__(<span class="keyword">None</span>, self)</span><br><span class="line">    <span class="keyword">return</span> v</span><br></pre></td></tr></table></figure>
+<h5 id="3-4_属性赋值时的查找过程">3.4 属性赋值时的查找过程</h5><p>python中对于object和type的属性赋值查找过程是相同的。Objects/typeobject.c 的type_setattro()方法最终调用也是 Objects/object.c 的 <strong>PyObject_GenericSetAttr()</strong>方法。如下c的 <strong>type_setattro()</strong> 代码所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span></span><br><span class="line"><span class="title">type_setattro</span><span class="params">(PyTypeObject *type, PyObject *name, PyObject *value)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!(type-&gt;tp_flags &amp; Py_TPFLAGS_HEAPTYPE)) &#123;</span><br><span class="line">        PyErr_Format(</span><br><span class="line">            PyExc_TypeError,</span><br><span class="line">            <span class="string">"can't set attributes of built-in/extension type '%s'"</span>,</span><br><span class="line">            type-&gt;tp_name);</span><br><span class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (PyObject_GenericSetAttr((PyObject *)type, name, value) &lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> update_slot(type, name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Objects/object.c 的 <strong>PyObject_GenericSetAttr()</strong>中对属性赋值的过程是：</p>
+<ol>
+<li><p>在type(obj) [<strong>注：对于object是class，对于class是metaclass</strong>] 的继承链中查找属性，若找到的属性是data descriptor，则调用__set__(obj, value)方法设置属性，操作完成返回。否则进去下一步。</p>
+</li>
+<li><p>如果obj.__dict__存在，直接在obj.__dict__中加入属性，操作完成返回。否则进去下一步。</p>
+</li>
+<li><p>若在第1步type(obj)的继承链中找到的属性是descriptor，且定义了__set__方法，则调用__set__(obj, value)方法设置属性，操作完成返回。</p>
+</li>
+<li><p>抛出异常属性只读异常（比如用@property装饰的属性）。</p>
+</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span></span><br><span class="line"><span class="title">PyObject_GenericSetAttr</span><span class="params">(PyObject *obj, PyObject *name, PyObject *value)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> _PyObject_GenericSetAttrWithDict(obj, name, value, NULL);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">_PyObject_GenericSetAttrWithDict(PyObject *obj, PyObject *name,</span><br><span class="line">                                 PyObject *value, PyObject *dict)</span><br><span class="line">&#123;</span><br><span class="line">    PyTypeObject *tp = Py_TYPE(obj);</span><br><span class="line">    PyObject *descr;</span><br><span class="line">    descrsetfunc f;</span><br><span class="line">    PyObject **dictptr;</span><br><span class="line">    <span class="keyword">int</span> res = -<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!PyString_Check(name))&#123;</span><br><span class="line"><span class="preprocessor">#ifdef Py_USING_UNICODE</span></span><br><span class="line">        <span class="comment">/* The Unicode to string conversion is done here because the</span><br><span class="line">           existing tp_setattro slots expect a string object as name</span><br><span class="line">           and we wouldn't want to break those. */</span></span><br><span class="line">        <span class="keyword">if</span> (PyUnicode_Check(name)) &#123;</span><br><span class="line">            name = PyUnicode_AsEncodedString(name, NULL, NULL);</span><br><span class="line">            <span class="keyword">if</span> (name == NULL)</span><br><span class="line">                <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">        &#123;</span><br><span class="line">            PyErr_Format(PyExc_TypeError,</span><br><span class="line">                         <span class="string">"attribute name must be string, not '%.200s'"</span>,</span><br><span class="line">                         Py_TYPE(name)-&gt;tp_name);</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">else</span></span><br><span class="line">        <span class="title">Py_INCREF</span><span class="params">(name)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tp-&gt;tp_dict == NULL) &#123;</span><br><span class="line">        <span class="keyword">if</span> (PyType_Ready(tp) &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">goto</span> done;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*在type(obj)的继承链中查找属性*/</span></span><br><span class="line">    descr = _PyType_Lookup(tp, name);</span><br><span class="line">    f = NULL;</span><br><span class="line">    <span class="comment">/*若找到的属性是data descriptor则执行__set__操作后结束赋值操作，返回。*/</span></span><br><span class="line">    <span class="keyword">if</span> (descr != NULL &amp;&amp;</span><br><span class="line">        PyType_HasFeature(descr-&gt;ob_type, Py_TPFLAGS_HAVE_CLASS)) &#123;</span><br><span class="line">        f = descr-&gt;ob_type-&gt;tp_descr_set;</span><br><span class="line">        <span class="keyword">if</span> (f != NULL &amp;&amp; PyDescr_IsData(descr)) &#123;</span><br><span class="line">            res = f(descr, obj, value);</span><br><span class="line">            <span class="keyword">goto</span> done;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (dict == NULL) &#123;</span><br><span class="line">        dictptr = _PyObject_GetDictPtr(obj);</span><br><span class="line">        <span class="keyword">if</span> (dictptr != NULL) &#123;</span><br><span class="line">            dict = *dictptr;</span><br><span class="line">            <span class="keyword">if</span> (dict == NULL &amp;&amp; value != NULL) &#123;</span><br><span class="line">                dict = PyDict_New();</span><br><span class="line">                <span class="keyword">if</span> (dict == NULL)</span><br><span class="line">                    <span class="keyword">goto</span> done;</span><br><span class="line">                *dictptr = dict;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/*若在obj中有__dict__则直接将属性赋值*/</span></span><br><span class="line">    <span class="keyword">if</span> (dict != NULL) &#123;</span><br><span class="line">        Py_INCREF(dict);</span><br><span class="line">        <span class="keyword">if</span> (value == NULL)</span><br><span class="line">            res = PyDict_DelItem(dict, name);</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            res = PyDict_SetItem(dict, name, value);</span><br><span class="line">        <span class="keyword">if</span> (res &lt; <span class="number">0</span> &amp;&amp; PyErr_ExceptionMatches(PyExc_KeyError))</span><br><span class="line">            PyErr_SetObject(PyExc_AttributeError, name);</span><br><span class="line">        Py_DECREF(dict);</span><br><span class="line">        <span class="keyword">goto</span> done;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*在type(obj)的继承链中查找到的属性是可写的（定义了__set__ 方法），执行__set__,结束属性赋值，返回。*/</span></span><br><span class="line">    <span class="keyword">if</span> (f != NULL) &#123;</span><br><span class="line">        res = f(descr, obj, value);</span><br><span class="line">        <span class="keyword">goto</span> done;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*抛出属性只读异常*/</span></span><br><span class="line">    <span class="keyword">if</span> (descr == NULL) &#123;</span><br><span class="line">        PyErr_Format(PyExc_AttributeError,</span><br><span class="line">                     <span class="string">"'%.100s' object has no attribute '%.200s'"</span>,</span><br><span class="line">                     tp-&gt;tp_name, PyString_AS_STRING(name));</span><br><span class="line">        <span class="keyword">goto</span> done;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    PyErr_Format(PyExc_AttributeError,</span><br><span class="line">                 <span class="string">"'%.50s' object attribute '%.400s' is read-only"</span>,</span><br><span class="line">                 tp-&gt;tp_name, PyString_AS_STRING(name));</span><br><span class="line">  done:</span><br><span class="line">    Py_DECREF(name);</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="3-5_object-__getattr__(self,_name)_与_object-__getattribute__(self,_name)">3.5 <code>object.__getattr__(self, name)</code> 与 <code>object.__getattribute__(self, name)</code></h5><p>通过自定义object.__getattr__和object.__getattribute__方法，我们可以控制对象属性访问过程。一般而言，访问对象属性时首先调用object.__getattribute__方法，当该方法抛出 AttributeError 异常时，调用object.__getattr__方法，并返回调用结果。</p>
+<ol>
+<li><p><strong>object.__getattribute__(self, name)</strong><br> 在访问类实例的属性时无条件调用这个方法。 如果类也定义了方法 __getattr__()，那么除非 __getattribute__() 显式地调用了它，或者抛出了 AttributeError 异常， 否则它就不会被调用。 这个方法应该返回一个计算好的属性值， 或者抛出异常 AttributeError。为了避免无穷递归，对于任何它需要访问的属性， 这个方法应该调用基类的同名方法，例如, object.__getattribute__(self, name).</p>
+<p> 注意：通过特定语法或者内建函式， 做隐式调用搜索特殊方法时，这个方法可能会被跳过，参见 搜索特殊方法。</p>
+</li>
+<li><p><strong>object.__getattr__(self, name)</strong><br> 在正常方式访问属性无法成功时 (就是说, self属性既不是实例的, 在类树结构中找不到) 使用。 name 是属性名，该方法应该返回一个计算好的属性值或抛出一个 AttributeError 异常。</p>
+<p> 注意， 如果属性可以通过正常方法访问， __getattr__() 是不会被调用的 (是有意将 __getattr__() 和 __setattr__() 设计成不对称的)。这样做的原因是基于效率的考虑，并且这样也不会让 __getattr__() 干涉正常属性。 注意， 至少对于类实例而言， 不必非要更新实例字典伪装属性 (但可以将它们插入到其它对象中)。需要全面控制属性访问，可以参考以下 __getattribute__() 的介绍.</p>
+</li>
+</ol>
+<p>对于对象属性赋值的控制，python提供了object.__setattr__方法：</p>
+<ol>
+<li><p><strong>object.__setattr__(self, name, value)</strong></p>
+<p> 在属性要被赋值时调用。这会替代正常机制 (即把值保存在实例字典中)。name 是属性名， vaule 是要赋的值.</p>
+<p> 如果在 __setattr__() 里要对一个实例属性赋值， 它应该调用父类的同名方法，例如， object.__setattr__(self, name, value)。</p>
+</li>
+</ol>
+<h5 id="3-6___dict___与___slots__">3.6 __dict__ 与 __slots__</h5><p>python在实例化一个类时，会为实例创建一个字典用来存储实例属性。该字典通过属性 <code>__dict__</code> 暴露出来的， 其背后实现的技术是descriptor——在类的 __dict__  中定义了一个名叫 ”__dict__“ 的data descriptor。结合之前的属性访问机制，我们很容易理解下面的代码：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; class A(object):pass</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&gt;&gt;&gt; A.__dict__</span><br><span class="line">dict_proxy(&#123;'__dict__': &lt;attribute '__dict__' of 'A' objects&gt;, '__module__': '__</span><br><span class="line">main__', '__weakref__': &lt;attribute '__weakref__' of 'A' objects&gt;, '__doc__': Non</span><br><span class="line">e&#125;)</span><br><span class="line">&gt;&gt;&gt; type(A.__dict__["__dict__"]) # 类A的__dict__属性中有一个 ”__dict__“ data descriptor</span><br><span class="line">&lt;type 'getset_descriptor'&gt;</span><br><span class="line"></span><br><span class="line"># 通过使用类A的实例a调用该描述器的__get__方法得到与直接访问A().__dict__相同的结果（参考3.3的内容）</span><br><span class="line">&gt;&gt;&gt; a=A()</span><br><span class="line">&gt;&gt;&gt; A.__dict__["__dict__"].__get__(a,A)</span><br><span class="line">&#123;&#125;</span><br><span class="line">&gt;&gt;&gt; a.__dict__</span><br><span class="line">&#123;&#125;</span><br><span class="line">&gt;&gt;&gt; A.__dict__["__dict__"].__get__(a,A) == a.__dict__</span><br><span class="line">True</span><br><span class="line">&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
+<p><strong><em>注：也就是说，python提供了另外一种方式来操作实例的属性：通过 <code>obj.__dict__</code> 访问到实例字典，通过操作该字典操作实例的属性。</em></strong></p>
+<p>python默认每创建一个实例都会为该实例分配一个用于保存实例属性的字典。<strong>对于那些没有什么实例属性且会创建大量实例的类型而言，这种默认方式会造成不必要的内存浪费</strong>。考虑到这个问题，python在新式类中引入了__slots__属性。当一个类定义了 __slots__ 属性，在实例化该类时便不会为实例分配用于保存实例属性的字典，而是预先分配为 __slots__ 声明的属性分配好空间。其背后实现的技术也是descriptor。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; class A(object):__slots__ = ("s",)</span><br><span class="line">...</span><br><span class="line">&gt;&gt;&gt; A.__dict__</span><br><span class="line">dict_proxy(&#123;'s': &lt;member 's' of 'A' objects&gt;, '__module__': '__main__', '__slots</span><br><span class="line">__': ('s',), '__doc__': None&#125;) # 类A定义了__slots__属性，其 __dict__ 中没有包含支持实例属性的 "__dict__" 资料描述器</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&gt;&gt;&gt; a = A()</span><br><span class="line">&gt;&gt;&gt; a.__dict__ # 类A定义了__slots__属性，没有为实例分配实例字典</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File "&lt;stdin&gt;", line 1, in &lt;module&gt;</span><br><span class="line">AttributeError: 'A' object has no attribute '__dict__'</span><br><span class="line"></span><br><span class="line">&gt;&gt;&gt; type(A.__dict__["s"]) # __slots__ 声明的属性，其背后实现的技术也是descriptor</span><br><span class="line">&lt;type 'member_descriptor'&gt;</span><br><span class="line">&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
+<p>有一个需要注意的问题，在定义了 __slots__的类型中，若没有在其实例上定义相应的属性（为属性赋值），那么其背后的 <code>member_descriptor</code> 调用会抛出  AttributeError 异常。换句话说，定义了 __slots__ 的类型实例化时并不会为属性提供默认值。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">&gt;&gt;&gt; </span>a.s <span class="comment"># 没有在实例上为属性赋值，访问会出错</span></span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File <span class="string">"&lt;stdin&gt;"</span>, line <span class="number">1</span>, <span class="keyword">in</span> &lt;module&gt;</span><br><span class="line">AttributeError: s</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>a.s = <span class="number">10</span></span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>a.s</span><br><span class="line"><span class="number">10</span></span><br><span class="line">&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
+<h4 id="4_结束语">4 结束语</h4><p>通过对python属性查找过程的解析，我们初步了解了其背后实现的机制，对于深入理解这门语言是大有裨益的。关于metaclass、MRO、Descriptor更深入的内容，可参考后面的资料。</p>
+<p>我使用python也有一段时间了，但是对语言背后的实现细节一直没有系统地研究过。每一次涉及到相关的问题，都是浅尝辄止，总是抱着问题解决就结束的态度。也就导致一次一次重复去查阅相关资料，浪费了时间，也没有真正理解。对其中很多底层技术和概念都有所了解，但没有深入，也没有思考过其中的联系。借由这次遇到的问题，整理了一下，这篇文字算是一个总结。</p>
+<h4 id="5_参考资料">5 参考资料</h4><ol>
+<li><p>Guido van Rossum 撰写的 <a href="http://python-history.blogspot.com/2010/06/method-resolution-order.html" target="_blank" rel="external">Method Resolution Order</a> 详细介绍了python的MRO算法演变历史。</p>
+</li>
+<li><p>Michele Simionato 撰写的 <a href="https://www.python.org/download/releases/2.3/mro/" target="_blank" rel="external">The Python 2.3 Method Resolution Order</a> 详细介绍了python2.3 MRO采用的C3算法。</p>
+</li>
+<li><p>e-satis 在Stack Overflow回答提问 <a href="http://stackoverflow.com/questions/100003/what-is-a-metaclass-in-python" target="_blank" rel="external">What is a metaclass in Python?</a> 的经典回答，通俗易懂地讲解了python的metaclass。</p>
+</li>
+<li><p>python文档中详细介绍了 <a href="http://docs.python.org/2/reference/datamodel.html?highlight=__slots__#__slots__" target="_blank" rel="external">__slots__</a>。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/python/">python</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/MRO/">MRO</a>, <a href="/tags/dict/">__dict__</a>, <a href="/tags/slots/">__slots__</a>, <a href="/tags/descriptor/">descriptor</a>, <a href="/tags/python/">python</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/04/21/python-attribute-lookup/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

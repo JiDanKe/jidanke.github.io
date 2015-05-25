@@ -1,0 +1,428 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>第 2 頁 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-25T03:57:51.000Z"><a href="/2015/03/25/use-collider-rules/">Mar 25 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/25/use-collider-rules/">Hero项目Collider使用梳理</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>渐渐发现随着demo的完善，Collider也越来越多，功能各不相同，一时难以弄清。故此写一篇文章梳理目前我们Collider的使用情况，备忘。</p>
+<h3 id="角色Collider">角色Collider</h3><p><img src="/images/d85b01be221e01d51d8aae9ff901ff212dc74433" alt=""></p>
+<p>Player对象里的Collider用来表示人物占用的体积，包含意义如下：<br>人物移动时，障碍物碰撞处理，避免人物走到障碍物里面的基本保证；做为攻击范围圈定的碰撞检测器。在SimpleCharacterController2D中定义作为障碍物的Collider在哪个Layer。</p>
+<p><img src="/images/e85a67d8e5411ac7c40f60fc864637daf959e7d6" alt=""></p>
+<p>Player有个子对象TouchResponse，挂载了一个Collider组件，这个Collider用来作为接受用户点击区域。比如攻击某个敌人，识别点击这个敌人的操作。这里的规则为Tag:Touchable，即获取Tag为Touchable的对象，再从中获取relatedObject。<br>Player -&gt; Tag:Player/Enemy, Layer:Roles<br>TouchResponse -&gt; Tag:Touchable Layer:Default</p>
+<h3 id="墙、物体、动态障碍的表示">墙、物体、动态障碍的表示</h3><p>墙使用Layer:Wall来标识<br>物体(如宝箱)用Layer:Objects来标识<br>动态障碍依赖于寻路组件，需要加入DynamicObstacle组件，并且用Layer:Wall/Objects来标识。<br>Wall、Objects由寻路组件定义，如下图</p>
+<p><img src="/images/c77bd52ebf3e3a13a2b0352cb7457bd728a8f0a8" alt=""></p>
+<h3 id="Tips">Tips</h3><ol>
+<li>在 Unity 3D 中 Collider 分为两大类：一类是普通 Collider，这一类可以在 3D 或者 2D 环境中使用; 另一类为 Collider 2D，一般在 2D 游戏中使用。与此对应的物理系统也分为 Physics 和 Physics 2D 两类。在进行射线（Ray）检测 Collider 碰撞时要注意 Collider 一定要和相应的物理系统匹配，比如：Collider 2D 要用 Physics 2D 发出的射线才能检测到碰撞。如果发现射线检测不到 Collider 可以检查一下 Collider 是否与物理系统相匹配。</li>
+</ol>
+<p>如果还有其他Collider的用途，望大家补充。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-24T03:43:57.000Z"><a href="/2015/03/24/a-bug-in-Animator-Play/">Mar 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/24/a-bug-in-Animator-Play/">Animator.Play的一个bug</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>Animator.Play方法，官方文档解释的很简单：“Plays a state”，但是实际使用中会有个问题。<br>如下，在同一帧里连续两次调用Play播放不同的动画片段：</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">animator.<span class="keyword">Play</span>(<span class="string">"animation1"</span>);  </span><br><span class="line">animator.<span class="keyword">Play</span>(<span class="string">"animation2"</span>);</span><br></pre></td></tr></table></figure>
+<p>你猜最后播放的是哪个动画？<br>我猜你猜的是animation2，兄弟我们都被坑了:P</p>
+<p>结果是animation1被播放，这有点反人类，应该是个bug。我使用的版本是Unity3D 5.0.0p1</p>
+<p>照这个结果，很多动画播放逻辑需要注意了。比如我们自己有个状态机，在这个状态机里调用Animator.Play来控制动画播放。如果在一帧内有多个状态切换，则可能会先后面状态的动画没有播放的问题。举个栗子：  </p>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="constant">Run </span>-&gt; <span class="constant">Idle</span></span><br></pre></td></tr></table></figure>
+<p>如果状态切换太快，则可能在Idle状态，却一直播放Run的动画。</p>
+<p>因为这个原因，状态切换最好放到下一帧。我们为状态机切换提供一个请求切换状态的接口，状态内部不能直接切换到下一个状态。</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//设置下一帧想要切换的状态</span></span><br><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">void</span> <span class="title">SetWishingState</span><span class="params">(State state)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//在帧的开始，切换到下一个状态</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">void</span> <span class="title">TranslateToWishingState</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Mar 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Unity 5动画系统问题</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="1-如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可">1.如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可</h3><h4 id="不会触发">不会触发</h4><p><img src="/images/c5868628369eb7755c4b133bed49a4b9e6428b03.jpg" alt="不会触发"></p>
+<h4 id="触发">触发</h4><p><img src="/images/d068f3cb1017fc8e3ed816b9f57dbf1f3f0bbb69.jpg" alt="触发"></p>
+<h3 id="2-_如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成">2. 如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成</h3><p><img src="/images/4729e5bafe4aec8d0563f06e97eb4df2efaebdaa.jpg" alt="延后一帧"></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/24/Unity5-animator-changes/">Unity 5 过渡控制变化</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
+<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
+<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
+<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-20T06:58:00.000Z"><a href="/2015/03/20/differenceBetweenCircleCastandOverlapCircle/">Mar 20 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/20/differenceBetweenCircleCastandOverlapCircle/">检测获取圆形区域内的collider对象</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>今天重构了下玩家的技能攻击实现类，把之前攻击时直接获取场景中的所有敌人再判读是否在攻击范围内来过滤改为直接获取技能攻击半径内的地方对象。由于检测两点之间是否有障碍物的时候用了：</p>
+<figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RaycastHit2D[] rayHits = Physics2D.LinecastAll (<span class="keyword">me</span>.position, target.position, mask);</span><br></pre></td></tr></table></figure>
+<p>最开始理所当然就认为 Physics2D.CircleCastAll 应该就是检测圆形范围内的碰撞器，以至于最开始看Physics2D.CircleCastAll的参数很不理解。事实上我需要的是Physics2D.OverlapCircleAll 。</p>
+<h3 id="一、获取在一个圆的半径范围内的collider">一、获取在一个圆的半径范围内的collider</h3><figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Collider<span class="number">2</span>D [] colliders = Physics<span class="number">2</span>D.OverlapCircleAll<span class="comment">(player.position, 1f, enemyLayer)</span>;</span><br><span class="line"><span class="keyword">if</span><span class="comment">(colliders.Length &gt; 0)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// enemies within 1m of the player</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="二、_获取以一个点为中心的圆朝某个方向移动一定距离碰撞到的layer上的collider">二、 获取以一个点为中心的圆朝某个方向移动一定距离碰撞到的layer上的collider</h3><figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">RaycastHit<span class="number">2</span>D[] hits=  Physics<span class="number">2</span>D.CircleCastAll<span class="comment">(player.position, 1f, player.right, 10f, enemyLayer)</span>;</span><br><span class="line">foreach<span class="comment">(RaycastHit2D hit in hits)</span></span><br><span class="line">&#123;</span><br><span class="line">	ApplyDamage<span class="comment">(hit.collider.gameObject)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="看图说话">看图说话</h3><p><img src="/images/24166795-E46D-45D3-A5A4-F7A75C266F50.jpg" alt="CircleCastAll and OverlapCircleAll"></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-03-19T10:54:39.000Z"><a href="/2015/03/19/Unity-BreakPoint/">Mar 19 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/19/Unity-BreakPoint/">Unity断点调试</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>有时候调试程序，断点信息可以很方便定位问题，Unity支持使用自带的MonoDevelop进行断点调试，但这个功能做的很不友好，经常Attach进程无响应。这里就记录一个成功率比较高的方法，避免浪费时间。</p>
+<ol>
+<li><p>打开Unity、MonoDevelop</p>
+</li>
+<li><p>在Unity中，Assets -&gt; Sync MonoDevelop Project</p>
+</li>
+<li><p>在MonoDevelop中，Run -&gt; Attach to Process…</p>
+</li>
+</ol>
+<p>选择Unity Editor (Unity)，点击Attach按钮  </p>
+<p><img src="/images/201503191901.png" alt=""></p>
+<p>这个经测试，不是每次都成功:（，如果无响应，那么请cmd+Q退出Unity和MonoDevelop，大侠请回到step1重新来过。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+
+<nav id="pagination">
+  
+    <a href="/" class="alignleft prev">上一頁</a>
+  
+  
+  <div class="clearfix"></div>
+</nav></div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

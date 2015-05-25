@@ -1,0 +1,311 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>nonblocking | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title tag">nonblocking</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T07:35:16.000Z"><a href="/2015/04/22/mutiplexing-IO/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/22/mutiplexing-IO/">I/O 复用：select、poll和epoll</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="引言">引言</h4><p>在<strong>阻塞式I/</strong>O模型下，一个线程只能处理一个流的I/O事件，为了同时高效处理多个流，只能采用多进程（fork）或者多线程的方式。</p>
+<p>使用<strong>非阻塞I/O</strong>模型，可以通过循环遍历的方式同时处理多个流（忙轮询），但是如果所有流都没有数据，就会造成CPU的浪费（在一些服务端应用程序上便不高效）。</p>
+<p>为了避免CPU的浪费，引入一个代理（<strong>select/poll，I/O复用</strong>），这个代理能够同时监视多个流的事件，当没有流事件发生时阻塞调用线程，释放CPU资源。</p>
+<p>虽然select/poll能够同时监视多个流（描述符）事件，但是并不知道具体是哪一个流的事件发生，其实现是遍历所有的描述符，故称为无差别轮询。随着监视的描述符增多，性能会下降，并且有些系统实现里面单个进程监视的描述符数量是有最大限制的。</p>
+<p>所以有了epoll（linux）/kqueue（freebsd）/iocp（windows）的出现，不同于非阻塞式I/O的忙轮询和I/O复用的无差别轮询，epoll只在某个流事件发生时通知调用者（内核实现）。</p>
+<h4 id="select">select</h4><p>调用select告诉内核对那些描述符（就读、写或异常条件）感兴趣以及等待多长时间。感兴趣的描述符不局限于套接字，任何描述符都可以使用select来测试。以下为select的函数签名：</p>
+<img src="/2015/04/22/mutiplexing-IO/select.png">
+<p>select 函数监视的文件描述符分3类，分别是readfds、writefds和exceptfds（都是值-结果参数）。调用后select函数会阻塞，直到有描述符就绪（有数据可读、可写、或者有异常）或者超时（timeout指定等待时间， <del>如果立即返回设为null即可</del>），函数返回。当select函数返回后，可以 通过遍历fdset，来找到就绪的描述符。</p>
+<p>timeout告知内核等待所指定的描述符中的任何一个就绪可花多长时间。其timeval结构用于指定这段时间的秒数和微妙数（虽然允许指定，实际上由于操作系统内核实现的原因这个微秒级的分辨率实际上并不很精确）。<br>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/22/mutiplexing-IO/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-21T15:28:43.000Z"><a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/">Apr 21 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/">同步、异步与阻塞、非阻塞，UNIX I/O模型</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="1_同步与异步">1 同步与异步</h4><p>同步和异步关注点是<strong>消息通信机制</strong> (synchronous communication/ asynchronous communication)，是一种编程模型。</p>
+<ul>
+<li><p>在同步模型下，由消息的处理者主动去等待消息的提供者。也就是说在发出一个“调用”后，在没有得到结果之前，该“调用”就不返回，但是一旦调用返回，就得到了返回值。</p>
+</li>
+<li><p>在异步模型下，由消息提供者来通知处理者可以提供需要的结果（通知机制由异步实现模型来保证）。也就是说在“调用”在发出后就立即返回了，不需要等待结果，换句话说，调用者不会立刻得到结果。“被调用者”有结果提供时会主动通知调用者（一般通过状态更新(如.NET APM)或者回调函数(如Node.js,Tornado)的形式）。</p>
+</li>
+</ul>
+<p>举个通俗的例子：</p>
+<blockquote>
+<p>你打电话问书店老板有没有《分布式系统》这本书，如果是同步通信机制，书店老板会说，“你稍等，我查一下”，然后开始查啊查，等查好了（可能是5秒，也可能是一天）告诉你结果（返回结果）。而异步通信机制，书店老板直接告诉你我查一下啊，查好了打电话给你，然后直接挂电话了（不返回结果）。然后查好了，他会主动打电话给你。在这里老板通过“回电”这种方式来回调。</p>
+</blockquote>
+<h4 id="2_阻塞与非阻塞">2 阻塞与非阻塞</h4><p>阻塞和非阻塞关注的是<strong>线程在等待调用结果（消息、结果）时的状态。</strong></p>
+<ul>
+<li><p>阻塞调用是指调用结果返回之前，当前线程做不了其他事情（<strong><em>被挂起或者自旋</em></strong>），调用线程只有在得到结果之后才会返回。</p>
+</li>
+<li><p>非阻塞调用指在不能立刻得到结果之前，该调用不会阻塞当前线程（例如返回一个结果代理对象或者错误码）。</p>
+</li>
+</ul>
+<p>还是上面的例子</p>
+<blockquote>
+<p>你打电话问书店老板有没有《分布式系统》这本书，你如果是阻塞式调用，你会一直把自己“挂起”，直到得到这本书有没有的结果，如果是非阻塞式调用，你不管老板有没有告诉你，你自己先一边去玩了， 当然你也要偶尔过几分钟check一下老板有没有返回结果。</p>
+</blockquote>
+<p><strong>在这里阻塞与非阻塞与是否同步异步无关</strong>，跟老板通过什么方式回答你结果无关。</p>
+<h4 id="3_UNIX_I/O模型">3 UNIX I/O模型</h4><p>在<a href="http://book.douban.com/subject/1500149/">《UNIX网络编程卷I》</a>第6章中定义如下几种I/O模型：</p>
+<ul>
+<li>阻塞式I/O模型（blocking I/O）</li>
+<li>非阻塞式I/O模型（noblocking I/O）</li>
+<li>I/O复用（mutiplexing， select/poll/epoll）</li>
+<li>信号驱动I/O（SIGIO)</li>
+<li>异步I/O（AIO）</li>
+</ul>
+<p>通常一个输入包括两个过程：</p>
+<ol>
+<li>等待数据准备好；</li>
+<li>从内核向进程空间复制数据。</li>
+</ol>
+<p>就socket的输入操作来说，第一步就是等待所有的数据从网络中达到。当所有分组到达时，它被复制到内核中的某个缓冲区。第二步就是把数据从缓冲区复制到应用的进程缓冲区。</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+
+  <nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav>
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

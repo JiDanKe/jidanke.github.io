@@ -1,0 +1,282 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>tornado：IOLoop模块解析 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="tornado：IOLoop模块解析"/>
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-22T13:04:01.000Z"><a href="/2015/04/22/IOLOOP/">Apr 22 2015</a></time>
+      
+      
+  
+    <h1 class="title">tornado：IOLoop模块解析</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="摘要">摘要</h3><p><a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L17" target="_blank" rel="external"><em> </em> <em> <code>ioloop.py</code> </em> <em> </em></a> 是整个tornado的核心模块，负责实现服务器的异步非阻塞机制。其中<a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L70" target="_blank" rel="external"><strong> <code>IOLoop</code> </strong></a>类是一个基于level-triggered的I/O事件循环，它使用I/O多路复用模型（select模型）监视每个文件描述符的I/O事件是否就绪，当文件描述符I/O事件就绪后调用对应的处理器（handler）进行处理。本篇笔记是对tornado v4.0.3的 IOLoop模块的源码解析。</p>
+<h3 id="IOLoop">IOLoop</h3><p>IOLoop在Linux下使用<code>epoll</code>, 在BSD/Mac OS X下使用<code>kqueue</code>，否则使用<code>selelct</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="decorator">@classmethod</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">configurable_default</span><span class="params">(cls)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> hasattr(select, <span class="string">"epoll"</span>):</span><br><span class="line">        <span class="keyword">from</span> tornado.platform.epoll <span class="keyword">import</span> EPollIOLoop</span><br><span class="line">        <span class="keyword">return</span> EPollIOLoop</span><br><span class="line">    <span class="keyword">if</span> hasattr(select, <span class="string">"kqueue"</span>):</span><br><span class="line">        <span class="comment"># Python 2.6+ on BSD or Mac</span></span><br><span class="line">        <span class="keyword">from</span> tornado.platform.kqueue <span class="keyword">import</span> KQueueIOLoop</span><br><span class="line">        <span class="keyword">return</span> KQueueIOLoop</span><br><span class="line">    <span class="keyword">from</span> tornado.platform.select <span class="keyword">import</span> SelectIOLoop</span><br><span class="line">    <span class="keyword">return</span> SelectIOLoop</span><br></pre></td></tr></table></figure>
+<p>通过调用<a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/ioloop.py#L674" target="_blank" rel="external"><code>add_handler</code></a>方法将一个文件描述符(v4.0中增加了对file-like object的支持)加入到I/O事件循环中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_handler</span><span class="params">(self, fd, handler, events)</span>:</span></span><br><span class="line">    <span class="string">"""Registers the given handler to receive the given events for ``fd``.</span><br><span class="line"></span><br><span class="line">    The ``fd`` argument may either be an integer file descriptor or</span><br><span class="line">    a file-like object with a ``fileno()`` method (and optionally a</span><br><span class="line">    ``close()`` method, which may be called when the `IOLoop` is shut</span><br><span class="line">    down).</span><br><span class="line"></span><br><span class="line">    The ``events`` argument is a bitwise or of the constants</span><br><span class="line">    ``IOLoop.READ``, ``IOLoop.WRITE``, and ``IOLoop.ERROR``.</span><br><span class="line"></span><br><span class="line">    When an event occurs, ``handler(fd, events)`` will be run.</span><br><span class="line"></span><br><span class="line">    .. versionchanged:: 4.0</span><br><span class="line">       Added the ability to pass file-like objects in addition to</span><br><span class="line">       raw file descriptors.</span><br><span class="line">    """</span></span><br><span class="line"></span><br><span class="line">    fd, obj = self.split_fd(fd)</span><br><span class="line">    self._handlers[fd] = (obj, stack_context.wrap(handler))</span><br><span class="line">    self._impl.register(fd, events | self.ERROR)</span><br></pre></td></tr></table></figure>
+<a id="more"></a>
+<p><code>self.split_fd</code>方法将文件描述符或者file-like object包装成（文件描述符，object）,<code>self._handlers</code>字段保存文件描述符对应的处理器，然后将需要监视的I/O事件注册到select中。在Tornado中只关心<code>READ</code>, <code>WRITE</code>, 和 <code>ERROR</code>事件，其中<code>ERROR</code>事件是自动添加的。</p>
+<p><code>self._impl</code>是<code>select.epoll</code>、<code>select.select</code>、<code>select.kqueue</code>中的任一Tornado实现，其中</p>
+<ol>
+<li><p><code>select</code> 对应 <a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/platform/select.py#L74" target="_blank" rel="external"><code>tornado.platform.select.SelectIOLoop，impl=_Select</code></a></p>
+</li>
+<li><p><code>epoll</code> 对应 <a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/platform/epoll.py#L24" target="_blank" rel="external"><code>tornado.platform.epoll.EPollIO</code></a></p>
+</li>
+<li><p><code>kqueue</code>对应 <a href="https://github.com/tornadoweb/tornado/blob/v4.0.2/tornado/platform/kqueue.py#L90" target="_blank" rel="external"><code>tornado.platform.kqueue.KQueueIOLoop，impl=_KQueue</code></a></p>
+</li>
+</ol>
+<p><code>select.select</code>，<code>select.kqueue</code> 分别通过 <code>_Select</code>、<code>_KQueue</code> 接口适配到 <code>select.epoll</code>。</p>
+<p>调用<code>IOLoop.start</code>方法启动I/O循环直到<code>IOLoop.stop</code>方法被调用才会停止（注意：stop方法只是设置停止标识，循环必须在处理完当前的I/O事件后才退出）。start方法封装了I/O循环的处理流程，其代码如下所示：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">start</span><span class="params">(self)</span>:</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># tonardo使用_running/_stopped两个字段组合表示3种状态：</span></span><br><span class="line">    <span class="comment"># 1、就绪（初始化完成/已经结束）：_running=False, _stopped=False;</span></span><br><span class="line">    <span class="comment"># 2、正在运行：_running=True, _stopped=False;</span></span><br><span class="line">    <span class="comment"># 3、正在结束：_running=False, _stopped=True;</span></span><br><span class="line">    <span class="keyword">if</span> self._running:</span><br><span class="line">        <span class="keyword">raise</span> RuntimeError(<span class="string">"IOLoop is already running"</span>)</span><br><span class="line">    self._setup_logging()</span><br><span class="line">    <span class="keyword">if</span> self._stopped:</span><br><span class="line">        self._stopped = <span class="keyword">False</span></span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    old_current = getattr(IOLoop._current, <span class="string">"instance"</span>, <span class="keyword">None</span>)</span><br><span class="line">    IOLoop._current.instance = self</span><br><span class="line">    self._thread_ident = thread.get_ident()</span><br><span class="line">    self._running = <span class="keyword">True</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># signal.set_wakeup_fd closes a race condition in event loops:</span></span><br><span class="line">    <span class="comment"># a signal may arrive at the beginning of select/poll/etc</span></span><br><span class="line">    <span class="comment"># before it goes into its interruptible sleep, so the signal</span></span><br><span class="line">    <span class="comment"># will be consumed without waking the select.  The solution is</span></span><br><span class="line">    <span class="comment"># for the (C, synchronous) signal handler to write to a pipe,</span></span><br><span class="line">    <span class="comment"># which will then be seen by select.</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># In python's signal handling semantics, this only matters on the</span></span><br><span class="line">    <span class="comment"># main thread (fortunately, set_wakeup_fd only works on the main</span></span><br><span class="line">    <span class="comment"># thread and will raise a ValueError otherwise).</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># If someone has already set a wakeup fd, we don't want to</span></span><br><span class="line">    <span class="comment"># disturb it.  This is an issue for twisted, which does its</span></span><br><span class="line">    <span class="comment"># SIGCHILD processing in response to its own wakeup fd being</span></span><br><span class="line">    <span class="comment"># written to.  As long as the wakeup fd is registered on the IOLoop,</span></span><br><span class="line">    <span class="comment"># the loop will still wake up and everything should work.</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># signal.set_wakeup_fd(fd)设置文件描述符fd, 当接收到信号时会在它上面写入一个 '＼0' 字节。</span></span><br><span class="line">    <span class="comment"># 用于唤醒被poll或select调用阻塞的进程，使进程能够处理信号。方法参数fd必须是以非阻塞</span></span><br><span class="line">    <span class="comment"># (non-blocking)方式打开的文件描述符，否则无效。调用该方法返回上一次调用设置的文件描述符（没有</span></span><br><span class="line">    <span class="comment"># 设置过则返回-1）。该方法只能在主线程中调用，在其他线程调用时将抛出 ValueError 异常。</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># 上述原注释中有提到twisted自身会设置wakeup fd处理SIGCHILD信号，所以在结合twisted使用时要注</span></span><br><span class="line">    <span class="comment"># 意override PosixReactorBase.installWaker等与waker相关法方法（暂时对twistd不了解，猜测）。</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># self._waker.write_fileno()文件描述符的 READ 事件已经在 initialize 方法中加入I/O循环列表。</span></span><br><span class="line">    old_wakeup_fd = <span class="keyword">None</span></span><br><span class="line">    <span class="keyword">if</span> hasattr(signal, <span class="string">'set_wakeup_fd'</span>) <span class="keyword">and</span> os.name == <span class="string">'posix'</span>:</span><br><span class="line">        <span class="comment"># requires python 2.6+, unix.  set_wakeup_fd exists but crashes</span></span><br><span class="line">        <span class="comment"># the python process on windows.</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            old_wakeup_fd = signal.set_wakeup_fd(self._waker.write_fileno())</span><br><span class="line">            <span class="keyword">if</span> old_wakeup_fd != -<span class="number">1</span>:</span><br><span class="line">                <span class="comment"># Already set, restore previous value.  This is a little racy,</span></span><br><span class="line">                <span class="comment"># but there's no clean get_wakeup_fd and in real use the</span></span><br><span class="line">                <span class="comment"># IOLoop is just started once at the beginning.</span></span><br><span class="line">                signal.set_wakeup_fd(old_wakeup_fd)</span><br><span class="line">                old_wakeup_fd = <span class="keyword">None</span></span><br><span class="line">        <span class="keyword">except</span> ValueError:  <span class="comment"># non-main thread</span></span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">            <span class="comment"># Prevent IO event starvation by delaying new callbacks</span></span><br><span class="line">            <span class="comment"># to the next iteration of the event loop.</span></span><br><span class="line">            <span class="keyword">with</span> self._callback_lock:</span><br><span class="line">                callbacks = self._callbacks</span><br><span class="line">                self._callbacks = []</span><br><span class="line"></span><br><span class="line">            <span class="comment"># Add any timeouts that have come due to the callback list.</span></span><br><span class="line">            <span class="comment"># Do not run anything until we have determined which ones</span></span><br><span class="line">            <span class="comment"># are ready, so timeouts that call add_timeout cannot</span></span><br><span class="line">            <span class="comment"># schedule anything in this iteration.</span></span><br><span class="line">            <span class="comment">#</span></span><br><span class="line">            <span class="comment"># self._timeouts是一个基于 heap 的 priority queue，存放_Timeout类型实例，</span></span><br><span class="line">            <span class="comment"># 按照到期时间由近到远和加入heap的先后顺序排序（参见_Timeout的__lt__和__le__）。</span></span><br><span class="line">            due_timeouts = []</span><br><span class="line">            <span class="keyword">if</span> self._timeouts:</span><br><span class="line">                now = self.time()</span><br><span class="line">                <span class="keyword">while</span> self._timeouts:</span><br><span class="line">                    <span class="keyword">if</span> self._timeouts[<span class="number">0</span>].callback <span class="keyword">is</span> <span class="keyword">None</span>:</span><br><span class="line">                        <span class="comment"># The timeout was cancelled.  Note that the</span></span><br><span class="line">                        <span class="comment"># cancellation check is repeated below for timeouts</span></span><br><span class="line">                        <span class="comment"># that are cancelled by another timeout or callback.</span></span><br><span class="line">                        heapq.heappop(self._timeouts)</span><br><span class="line">                        self._cancellations -= <span class="number">1</span></span><br><span class="line">                    <span class="keyword">elif</span> self._timeouts[<span class="number">0</span>].deadline &lt;= now:</span><br><span class="line">                        due_timeouts.append(heapq.heappop(self._timeouts))</span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">                <span class="comment"># 由于从heap中移除一个元素很复杂，所以tronado实现remove_timeout时将取消的</span></span><br><span class="line">                <span class="comment"># timeout对象保留在heap中，这样可能会导致内存问题，所以这里做了一个处理512的</span></span><br><span class="line">                <span class="comment"># 阈值执行垃圾回收。remove_timeout方法的注释中有说明。</span></span><br><span class="line">                <span class="keyword">if</span> (self._cancellations &gt; <span class="number">512</span></span><br><span class="line">                        <span class="keyword">and</span> self._cancellations &gt; (len(self._timeouts) &gt;&gt; <span class="number">1</span>)):</span><br><span class="line">                    <span class="comment"># Clean up the timeout queue when it gets large and it's</span></span><br><span class="line">                    <span class="comment"># more than half cancellations.</span></span><br><span class="line">                    self._cancellations = <span class="number">0</span></span><br><span class="line">                    self._timeouts = [x <span class="keyword">for</span> x <span class="keyword">in</span> self._timeouts</span><br><span class="line">                                      <span class="keyword">if</span> x.callback <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>]</span><br><span class="line">                    heapq.heapify(self._timeouts)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> callback <span class="keyword">in</span> callbacks:</span><br><span class="line">                self._run_callback(callback)</span><br><span class="line">            <span class="keyword">for</span> timeout <span class="keyword">in</span> due_timeouts:</span><br><span class="line">                <span class="keyword">if</span> timeout.callback <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">                    self._run_callback(timeout.callback)</span><br><span class="line">            <span class="comment"># Closures may be holding on to a lot of memory, so allow</span></span><br><span class="line">            <span class="comment"># them to be freed before we go into our poll wait.</span></span><br><span class="line">            <span class="comment">#</span></span><br><span class="line">            <span class="comment"># 在进入poll等待之前释放闭包占用的内存，优化系统</span></span><br><span class="line">            callbacks = callback = due_timeouts = timeout = <span class="keyword">None</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># 优化poll等待超时时间：</span></span><br><span class="line">            <span class="comment"># 1、I/O循环有callback需要处理时，不阻塞poll调用，也就是poll_timeout=0；</span></span><br><span class="line">            <span class="comment"># 2、I/O循环有timeout需要处理时，计算第一个timeout（self._timeouts[0]，</span></span><br><span class="line">            <span class="comment">#    最先超时需要处理的timeout）距离现在的超时间隔，取poll_timeout默认值与</span></span><br><span class="line">            <span class="comment">#    该间隔之间的最小值（以保证timeout 一超时就能被I/O循环立即处理，不被poll</span></span><br><span class="line">            <span class="comment">#    等待导致延时；若第一个timeout现在已经超时，则最小值&lt;0，故需要与0比较修正）；</span></span><br><span class="line">            <span class="comment"># 3、I/O循环没有callback和timeout需要处理，则使用默认等待时间。</span></span><br><span class="line">            <span class="keyword">if</span> self._callbacks:</span><br><span class="line">                <span class="comment"># If any callbacks or timeouts called add_callback,</span></span><br><span class="line">                <span class="comment"># we don't want to wait in poll() before we run them.</span></span><br><span class="line">                poll_timeout = <span class="number">0.0</span></span><br><span class="line">            <span class="keyword">elif</span> self._timeouts:</span><br><span class="line">                <span class="comment"># If there are any timeouts, schedule the first one.</span></span><br><span class="line">                <span class="comment"># Use self.time() instead of 'now' to account for time</span></span><br><span class="line">                <span class="comment"># spent running callbacks.</span></span><br><span class="line">                poll_timeout = self._timeouts[<span class="number">0</span>].deadline - self.time()</span><br><span class="line">                poll_timeout = max(<span class="number">0</span>, min(poll_timeout, _POLL_TIMEOUT))</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                <span class="comment"># No timeouts and no callbacks, so use the default.</span></span><br><span class="line">                poll_timeout = _POLL_TIMEOUT</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> self._running:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># 为了监视I/O循环的阻塞状态，tornado提供了通过定时发送SIGALRM信号的方式来异步通知</span></span><br><span class="line">            <span class="comment"># 进程I/O循环阻塞超过了预期的最大时间（self._blocking_signal_threshold）。</span></span><br><span class="line">            <span class="comment">#</span></span><br><span class="line">            <span class="comment"># IOLoop.set_blocking_signal_threshold()方法设置一个signal.SIGALRM</span></span><br><span class="line">            <span class="comment"># 信号处理函数来监视I/O循环的阻塞时间。</span></span><br><span class="line">            <span class="comment">#</span></span><br><span class="line">            <span class="comment"># poll调用返回后（poll等待时间不计入I/O循环阻塞时间），通过调用signal.setitimer(</span></span><br><span class="line">            <span class="comment"># signal.ITIMER_REAL, self._blocking_signal_threshold, 0)设置定时器，每间</span></span><br><span class="line">            <span class="comment"># 隔 _blocking_signal_threshold 发送一个 SIGALRM 信号，也就是说当I/O循环阻塞超</span></span><br><span class="line">            <span class="comment"># 过 _blocking_signal_threshold 时会发送一个 SIGALRM 信号。</span></span><br><span class="line">            <span class="comment">#</span></span><br><span class="line">            <span class="comment"># 进入poll之前调用signal.setitimer(signal.ITIMER_REAL, 0, 0)清理定时器，直到</span></span><br><span class="line">            <span class="comment"># poll返回后重新设置定时器。</span></span><br><span class="line">            <span class="keyword">if</span> self._blocking_signal_threshold <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">                <span class="comment"># clear alarm so it doesn't fire while poll is waiting for</span></span><br><span class="line">                <span class="comment"># events.</span></span><br><span class="line">                signal.setitimer(signal.ITIMER_REAL, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                event_pairs = self._impl.poll(poll_timeout)</span><br><span class="line">            <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">                <span class="comment"># Depending on python version and IOLoop implementation,</span></span><br><span class="line">                <span class="comment"># different exception types may be thrown and there are</span></span><br><span class="line">                <span class="comment"># two ways EINTR might be signaled:</span></span><br><span class="line">                <span class="comment"># * e.errno == errno.EINTR</span></span><br><span class="line">                <span class="comment"># * e.args is like (errno.EINTR, 'Interrupted system call')</span></span><br><span class="line">                <span class="comment">#</span></span><br><span class="line">                <span class="comment"># poll调用可能会导致进程进入阻塞状态（sleep），这时候进程被某个系统信号唤醒后会引发EINTR错误（</span></span><br><span class="line">                <span class="comment"># 取决于python的版本和具体的IOLoop实现，一般情况下通过 signal.set_wakeup_fd（）设置wakeup fd</span></span><br><span class="line">                <span class="comment"># 来捕获信号进行处理，不引发InterruptedError[Raised when a system call is interrupted by</span></span><br><span class="line">                <span class="comment"># an incoming signal. Corresponds to errno EINTR.]）。</span></span><br><span class="line">                <span class="comment">#</span></span><br><span class="line">                <span class="comment"># 这种会导致当前进程（线程）进入阻塞的系统调用被称为慢系统调用(slow system call)，比如accept、</span></span><br><span class="line">                <span class="comment"># read、write、select、和open之类的函数。</span></span><br><span class="line">                <span class="keyword">if</span> errno_from_exception(e) == errno.EINTR:</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    <span class="keyword">raise</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># 设置定时器以便在I/O循环阻塞超过预期时间时发送 SIGALRM 信号。</span></span><br><span class="line">            <span class="comment">#</span></span><br><span class="line">            <span class="comment"># signal.setitimer函数，提供三种定时器，它们相互独立，任意一个定时完成都将发送定时信号到进程，并且自动重新计时。</span></span><br><span class="line">            <span class="comment"># 1、ITIMER_REAL发送 SIGALRM，定时真实时间，与alarm类型相同。</span></span><br><span class="line">            <span class="comment"># 2、ITIMER_VIRT发送 SIGVTALRM，定时进程在用户态下的实际执行时间。</span></span><br><span class="line">            <span class="comment"># 3、ITIMER_PROF发送SIGPROF，定时进程在用户态和核心态下的实际执行时间。</span></span><br><span class="line">            <span class="keyword">if</span> self._blocking_signal_threshold <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">                signal.setitimer(signal.ITIMER_REAL,</span><br><span class="line">                                 self._blocking_signal_threshold, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">            <span class="comment"># Pop one fd at a time from the set of pending fds and run</span></span><br><span class="line">            <span class="comment"># its handler. Since that handler may perform actions on</span></span><br><span class="line">            <span class="comment"># other file descriptors, there may be reentrant calls to</span></span><br><span class="line">            <span class="comment"># this IOLoop that update self._events</span></span><br><span class="line">            <span class="comment">#</span></span><br><span class="line">            <span class="comment"># 由于一个handler可能会操作其他文件描述符与IOLoop进行交互，比如调用</span></span><br><span class="line">            <span class="comment"># IOLoop.remove_handler方法等将导致self._events被修改。所以使用</span></span><br><span class="line">            <span class="comment"># while循环而不是for循环（要求迭代期间self._events不能被修改）。</span></span><br><span class="line">            self._events.update(event_pairs)</span><br><span class="line">            <span class="keyword">while</span> self._events:</span><br><span class="line">                fd, events = self._events.popitem()</span><br><span class="line">                <span class="keyword">try</span>:</span><br><span class="line">                    fd_obj, handler_func = self._handlers[fd]</span><br><span class="line">                    handler_func(fd_obj, events)</span><br><span class="line">                <span class="keyword">except</span> (OSError, IOError) <span class="keyword">as</span> e:</span><br><span class="line">                    <span class="keyword">if</span> errno_from_exception(e) == errno.EPIPE:</span><br><span class="line">                        <span class="comment"># Happens when the client closes the connection</span></span><br><span class="line">                        <span class="keyword">pass</span></span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        self.handle_callback_exception(self._handlers.get(fd))</span><br><span class="line">                <span class="keyword">except</span> Exception:</span><br><span class="line">                    self.handle_callback_exception(self._handlers.get(fd))</span><br><span class="line">            fd_obj = handler_func = <span class="keyword">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        <span class="comment"># reset the stopped flag so another start/stop pair can be issued</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="comment"># I/O循环结束重置_stopped状态，清理定时器，将当前IOLoop实例从当前线程移除绑定。</span></span><br><span class="line">        self._stopped = <span class="keyword">False</span></span><br><span class="line">        <span class="keyword">if</span> self._blocking_signal_threshold <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">            signal.setitimer(signal.ITIMER_REAL, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">        IOLoop._current.instance = old_current</span><br><span class="line">        <span class="keyword">if</span> old_wakeup_fd <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">            signal.set_wakeup_fd(old_wakeup_fd)</span><br></pre></td></tr></table></figure></p>
+<p><code>start</code> 方法调用后IOLoop进入I/O主循环，要停止主循环只需调用<code>stop</code>方法。<code>stop</code>方法会将I/O循环设置为正在结束状态_running=False，_stopped=True，为了防止主循环已进入poll等待（sleep,没有就绪的文件描述符）而调用<code>self._waker.wake()</code>将主循环进程唤醒（self._waker包装的文件描述符 READ 事件已经在 initialize 方法中加入I/O循环。）。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">stop</span><span class="params">(self)</span>:</span></span><br><span class="line">    self._running = <span class="keyword">False</span></span><br><span class="line">    self._stopped = <span class="keyword">True</span></span><br><span class="line">    self._waker.wake()</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">initialize</span><span class="params">(self, impl, time_func=None)</span>:</span></span><br><span class="line">    super(PollIOLoop, self).initialize()</span><br><span class="line"></span><br><span class="line">    [...省略部分代码...]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create a pipe that we send bogus data to when we want to wake</span></span><br><span class="line">    <span class="comment"># the I/O loop when it is idle</span></span><br><span class="line">    self._waker = Waker()</span><br><span class="line">    self.add_handler(self._waker.fileno(),</span><br><span class="line">                     <span class="keyword">lambda</span> fd, events: self._waker.consume(),</span><br><span class="line">                     self.READ)</span><br></pre></td></tr></table></figure></p>
+<p><code>Waker</code> 内部创建了一个没有名字的管道和对应的处理器(Waker.consume)，IOLoop.initialize把管道的一端(Waker.fileno)放在了轮询文件描述符列表中。当需要停止时，在管道的另一端(Waker.write_fileno)随便写点什么(Waker.wake)便立即将主循环从poll等待中唤醒。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Waker</span><span class="params">(interface.Waker)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        r, w = os.pipe()</span><br><span class="line">        _set_nonblocking(r)</span><br><span class="line">        _set_nonblocking(w)</span><br><span class="line">        set_close_exec(r)</span><br><span class="line">        set_close_exec(w)</span><br><span class="line">        self.reader = os.fdopen(r, <span class="string">"rb"</span>, <span class="number">0</span>)</span><br><span class="line">        self.writer = os.fdopen(w, <span class="string">"wb"</span>, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">fileno</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.reader.fileno()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">write_fileno</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.writer.fileno()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">wake</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            self.writer.write(<span class="string">b"x"</span>)</span><br><span class="line">        <span class="keyword">except</span> IOError:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">consume</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">                result = self.reader.read()</span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">not</span> result:</span><br><span class="line">                    <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">except</span> IOError:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">close</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.reader.close()</span><br><span class="line">        self.writer.close()</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/tornado/">tornado</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/epoll/">epoll</a>, <a href="/tags/ioloop/">ioloop</a>, <a href="/tags/kqueue/">kqueue</a>, <a href="/tags/poll/">poll</a>, <a href="/tags/python/">python</a>, <a href="/tags/select/">select</a>, <a href="/tags/tornado/">tornado</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/04/22/IOLOOP/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

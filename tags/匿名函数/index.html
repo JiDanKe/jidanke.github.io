@@ -1,0 +1,247 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>匿名函数 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title tag">匿名函数</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-24T11:14:21.000Z"><a href="/2015/04/24/closures/">Apr 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/04/24/closures/">闭包(closures)</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3 id="1-_摘要">1. 摘要</h3><p>一直以来，闭包这种编程结构都是一些语言的重要组成部分。在某些场景中使用闭包能够优雅地解决一些棘手的问题。同时闭包的使用有益于模块化编程，它能以简单的方式开发较小的模块，从而提高开发速度和程序的可复用性。</p>
+<p>闭包是一门十分有用的技术，但是由于在C#中函数不是一等公民（First-class citizen）的原因，以前在使用C#的时候我没有深入地去关注其中对闭包的支持。而最近一段时间由于工作需要，主要使用 javascript/python 进行开发，在这两种编程语言中函数都是被视为一等对象，实践中大量使用闭包简化编程。例如在javascript中使用闭包模拟对象实例，在python中利用闭包的特性定义功能强大的装饰器等等。</p>
+<p>对于这样一门技术，仅仅会使用不是目的，知其然而知其所以然才是。这篇笔记即是出于这样一种目的而整理的。相比较而言我只对C#、javascript、python比较熟悉，而三者中javascript对闭包的支持相对纯粹和完备，所以笔记中我主要用javascript语言表述。但是涉及具体语言的部分，也使用C#和python语言表述，比如对 “闭包陷阱” 的解决，python受限制的闭包实现。</p>
+<p>注：笔记相关的代码，主要的目的是描述问题，所以我并没有一一运行过，不能确保都是正确的。但这不影响相关内容。</p>
+<h3 id="2-_闭包，匿名函数，函数对象，自由变量，好乱的样子">2. 闭包，匿名函数，函数对象，自由变量，好乱的样子</h3><p>在（一般的）编程语言中，局部变量的作用域仅限于包含它们的函数，脱离了创建它的函数环境后便无法被访问到。但在一些支持嵌套定义函数的语言中，如果内部的函数引用了外部的函数的变量，则可能延长变量的生命周期。例如下面的javascript代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">foo</span><span class="params">(x)</span></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> i = x * <span class="number">2</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span><span class="params">(y)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> i+y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> f1 = foo(<span class="number">1</span>);</span><br><span class="line"><span class="keyword">var</span> f2 = foo(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">print(f1(<span class="number">2</span>)); <span class="comment">// 4</span></span><br><span class="line">print(f2(<span class="number">2</span>)); <span class="comment">// 6</span></span><br></pre></td></tr></table></figure>
+<p>外部 foo 函数执行后返回了foo内部定义的匿名函数，以及不在该内部函数中定义的外部变量i。即使离开了创建i的函数环境，我们依然能够通过f1，f2访问到i。这就是一个典型的闭包（Closure）。</p>
+<p>其实闭包并不是一个新概念，而是早在上个世纪60年代高级语言发展初期就已经产生。那么究竟闭包是什么呢？按照维基百科闭包的解释，一般我们有两种定义：</p>
+<ol>
+<li><p>在计算机科学中，闭包（Closure）是词法闭包（Lexical Closure）的简称，指的是引用了自由变量的函数（<em>自由变量指定的除去函数局部变量之外的其他变量，比如前面例子中的变量i</em>）。</p>
+</li>
+<li><p>另一种说法认为闭包是由函数和相关的引用环境组合而成的实体。</p>
+</li>
+</ol>
+<p>从定义上可以看出，这两种对闭包的定义具有完全不同的关注点。对于第一种定义，强调的是闭包是函数，是一类特殊的函数。第二种定义认为闭包是函数和引用环境组成的实体，本质上不再是函数，而是函数对象，能够作为对象使用的函数。术语 <strong>first class function</strong> 是对这个概念的精确描述。函数本质上只是一些可执行的代码，一旦被定义好以后就不会发生变化，没有状态，具有引用的透明性。闭包作为函数对象，可以由同一个函数与不同的引用环境组成不同的实例，有状态，没有引用的透明性，所以闭包不再是单纯的函数。</p>
+<p>从理解的角度的来说，第二种定义更为精确和利于理解。</p>
+<p><strong><em>注：匿名函数与闭包是不同概念，在一般支持闭包的语言中都支持匿名函数，匿名函数可以让我们更容易实现闭包。</em></strong></p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/04/24/closures/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+
+  <nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav>
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

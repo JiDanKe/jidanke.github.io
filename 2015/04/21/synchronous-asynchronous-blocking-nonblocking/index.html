@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>同步、异步与阻塞、非阻塞，UNIX I/O模型 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="同步、异步与阻塞、非阻塞，UNIX I/O模型"/>
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-04-21T15:28:43.000Z"><a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/">Apr 21 2015</a></time>
+      
+      
+  
+    <h1 class="title">同步、异步与阻塞、非阻塞，UNIX I/O模型</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="1_同步与异步">1 同步与异步</h4><p>同步和异步关注点是<strong>消息通信机制</strong> (synchronous communication/ asynchronous communication)，是一种编程模型。</p>
+<ul>
+<li><p>在同步模型下，由消息的处理者主动去等待消息的提供者。也就是说在发出一个“调用”后，在没有得到结果之前，该“调用”就不返回，但是一旦调用返回，就得到了返回值。</p>
+</li>
+<li><p>在异步模型下，由消息提供者来通知处理者可以提供需要的结果（通知机制由异步实现模型来保证）。也就是说在“调用”在发出后就立即返回了，不需要等待结果，换句话说，调用者不会立刻得到结果。“被调用者”有结果提供时会主动通知调用者（一般通过状态更新(如.NET APM)或者回调函数(如Node.js,Tornado)的形式）。</p>
+</li>
+</ul>
+<p>举个通俗的例子：</p>
+<blockquote>
+<p>你打电话问书店老板有没有《分布式系统》这本书，如果是同步通信机制，书店老板会说，“你稍等，我查一下”，然后开始查啊查，等查好了（可能是5秒，也可能是一天）告诉你结果（返回结果）。而异步通信机制，书店老板直接告诉你我查一下啊，查好了打电话给你，然后直接挂电话了（不返回结果）。然后查好了，他会主动打电话给你。在这里老板通过“回电”这种方式来回调。</p>
+</blockquote>
+<h4 id="2_阻塞与非阻塞">2 阻塞与非阻塞</h4><p>阻塞和非阻塞关注的是<strong>线程在等待调用结果（消息、结果）时的状态。</strong></p>
+<ul>
+<li><p>阻塞调用是指调用结果返回之前，当前线程做不了其他事情（<strong><em>被挂起或者自旋</em></strong>），调用线程只有在得到结果之后才会返回。</p>
+</li>
+<li><p>非阻塞调用指在不能立刻得到结果之前，该调用不会阻塞当前线程（例如返回一个结果代理对象或者错误码）。</p>
+</li>
+</ul>
+<p>还是上面的例子</p>
+<blockquote>
+<p>你打电话问书店老板有没有《分布式系统》这本书，你如果是阻塞式调用，你会一直把自己“挂起”，直到得到这本书有没有的结果，如果是非阻塞式调用，你不管老板有没有告诉你，你自己先一边去玩了， 当然你也要偶尔过几分钟check一下老板有没有返回结果。</p>
+</blockquote>
+<p><strong>在这里阻塞与非阻塞与是否同步异步无关</strong>，跟老板通过什么方式回答你结果无关。</p>
+<h4 id="3_UNIX_I/O模型">3 UNIX I/O模型</h4><p>在<a href="http://book.douban.com/subject/1500149/" target="_blank" rel="external">《UNIX网络编程卷I》</a>第6章中定义如下几种I/O模型：</p>
+<ul>
+<li>阻塞式I/O模型（blocking I/O）</li>
+<li>非阻塞式I/O模型（noblocking I/O）</li>
+<li>I/O复用（mutiplexing， select/poll/epoll）</li>
+<li>信号驱动I/O（SIGIO)</li>
+<li>异步I/O（AIO）</li>
+</ul>
+<p>通常一个输入包括两个过程：</p>
+<ol>
+<li>等待数据准备好；</li>
+<li>从内核向进程空间复制数据。</li>
+</ol>
+<p>就socket的输入操作来说，第一步就是等待所有的数据从网络中达到。当所有分组到达时，它被复制到内核中的某个缓冲区。第二步就是把数据从缓冲区复制到应用的进程缓冲区。</p>
+<a id="more"></a>
+<h5 id="3-1_阻塞式I/O模型：">3.1 阻塞式I/O模型：</h5><img src="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/blocking_model.png">
+<p>理论上讲，默认情况下所有的socket都是阻塞的。如上图所示，我们把recvfrom函数视为系统调用，这样便于用于区分应用进程和内核。不论操作系统如何实现，一般该调用都会导致从应用进程空间切换到内核空间运行，一段时间后再切换回来。在阻塞式I/O模型中，进程调用recvfrom函数，其系统调用直到数据报全部到达并从内核复制到应用进程缓存区或者发生错误才返回。从调用recvfrom开始直到它返回的这段时间是被阻塞的。</p>
+<h5 id="3-2_非阻塞式I/O模型">3.2 非阻塞式I/O模型</h5><p>进程把一个socket设置成非阻塞是在通知内核，当所有的I/O操作非得把本进程投入睡眠才能完成时，不要把进程投入睡眠而是返回一个错误。</p>
+<img src="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/nonblocking_model.png">
+<p>前三次调用recvfrom时没有数据可返回，因此内核转而激励返回一个EWOULDBLOCK错误。第四次调用时数据报已经准备好了，它才被复制进应用进程缓冲区，于是recvfrom成功返回。<br>当一个进程像这样对一个非阻塞描述符循环调用recvfrom时，我们称之为轮询（polling）。应用进程持续轮询内核，以查看某个操作是否就绪。这么做往往消耗大量的CPU时间，不过这种模型偶尔会遇到，通常是在提供某一种功能的系统中才有。</p>
+<h5 id="3-3_I/O复用模型">3.3 I/O复用模型</h5><p>有了I/O复用（I/O mutiplexing），我们就可以调用select或者poll，阻塞在这两个系统调用中的某一个之上，而不是阻塞在真正的I/O系统调用上。</p>
+<img src="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/mutiplexing_model.png">
+<p>我们阻塞于select调用，等待数据报socket变得可读。当select返回可读这个条件时，我们调用recvfrom把所有数据报复制到应用进程缓冲区。<br>从模型上看I/O复用相对于阻塞式I/O并没有什么优势，事实上还用了两个系统调用（select/recvfrom），I/O复用还稍有劣势。不过由于select能够同时等待多个描述符，这个功能还是很有用。</p>
+<p><strong><em>与I/O复用密切相关的另一种I/O模型是在多线程中使用阻塞式I/O，这种模型与I/O复用极为相似，但是由于它没有使用select阻塞在多个文件描述符上，而是使用多个线程（每个描述符，一个线程），这样每个线程都可以自由地调用诸如recvfrom之类的阻塞式I/O系统调用。</em></strong></p>
+<h5 id="3-4_信号驱动式I/O">3.4 信号驱动式I/O</h5><p>让内核在描述符在就绪的时候发送SIGIO信号通知我们，我们称这种模型为信号驱动式I/O。</p>
+<img src="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/sig_model.png">
+<p>无论如何处理SIGIO信号，这种模型的优势在于等待数据报到达期间进程不被阻塞。直到调用recvfrom时，数据才从内核复制到应用进程空间缓冲区。</p>
+<h5 id="3-5_异步I/O模型">3.5 异步I/O模型</h5><p>异步I/O（asynchronous I/O）由POSIX规范定义。与POSIX规范的实时函数一致，一般地说这些函数的工作机制是：告知内核启动某个操作，并让内核在整个操作（包括从内核复制数据到我们应用的进程空间）完成后通知我们（<strong><em>这个是不是与编程模型的异步定义看起来一样</em></strong>）。</p>
+<p>异步I/O模型与信号驱动式I/O的主要区别在于socket输入操作的第二步，在异步I/O模型中数据由内核复制到用户进程空间由模型完成后通知我们。换句话说，信号驱动I/O是由内核通知我们什么时候可以启动一个I/O操作，而异步I/O模型是由内核通知我们I/O操作什么时候完成。</p>
+<img src="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/sig_model.png">
+<p><strong>上述阻塞式I/O模型、非阻塞式I/O模型、复用I/O模型、信号驱动式I/O，不同之处仅在在socket输入操作的第一步等待数据报完成就绪阶段，在阻塞式I/O模型、I/O复用模型中调用进程会被阻塞，非阻塞式I/O模型与信号驱动式I/O模型不会阻塞。第二步都是相同的，都需要调用recvfrom之类的系统调用等待数据从内核复制到应用进程空间。在异步I/O模型中这两个阶段都要处理，从而不同于其他4种模型。</strong></p>
+<p>POSXI把这两个术语定义如下：</p>
+<ul>
+<li>同步I/O操作（synchronouns I/O operation）导致请求进程阻塞，直到I/O操作完成；</li>
+<li>异步I/O操作（asynchronous I/O operation）不导致请求进程阻塞。</li>
+</ul>
+<img src="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/compare_model.png">
+<p><strong>根据上述定义，我们的前4种模型——阻塞式I/O模型、非阻塞式I/O模型、I/O复用模型和信号驱动模型都是同步I/O模型，因为其中真正的I/O操作（recvfrom）将阻塞进程。只有异步模型与POSIX定义的异步I/O相匹配。</strong></p>
+<img src="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/compare_model.png">
+<h4 id="4_参考资料">4 参考资料</h4><ol>
+<li><p>同步与异步，阻塞与非阻塞的内容及例子主要引用了知乎问题 <a href="http://www.zhihu.com/question/19732473" target="_blank" rel="external">“怎样理解阻塞非阻塞与同步异步的区别”</a> 中 <strong>卢伊、陈硕</strong> 的回答。</p>
+</li>
+<li><p>UNIX I/O模型参考引用<a href="http://book.douban.com/subject/1500149/" target="_blank" rel="external">《UNIX网络编程：卷一》</a>第六章。</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/服务端基础/">服务端基础</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/UNIX-I-O/">UNIX I/O</a>, <a href="/tags/asynchronous/">asynchronous</a>, <a href="/tags/blocking/">blocking</a>, <a href="/tags/nonblocking/">nonblocking</a>, <a href="/tags/synchronous/">synchronous</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/04/21/synchronous-asynchronous-blocking-nonblocking/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>1</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
