@@ -55,6 +55,64 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2015-03-30T11:31:39.000Z"><a href="/2015/03/30/Canvas-Scaler/">Mar 30 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/03/30/Canvas-Scaler/">Unity 3D Canvas Scaler 解析</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>UGUI(Unity3D 原生 UI 组件) 的屏幕分辨率自适应是通过在 <code>Canvas</code> 组件上添加 <code>Canvas Scaler</code> 组件(5.0 之前的这个组件的功能是由 <code>Reference Resolution</code> 和 <code>Physical Resolution</code> 这两个组件来同完成的)来实现的。这个组件的属性将会决定在这个 <code>Canvas</code> 下所有 UI 组件的缩放规则。<code>Canvas Scaler</code> 的缩放模式分为三种，下面将分别介绍这几种缩放模式，以便我们可以去更好地使用它们。</p>
+<h2 id="Constant_Pixel_Size">Constant Pixel Size</h2><p>在这种模式下 UI 的大小（以像素为单位）将不会随着屏幕尺寸的改变而改变。在这种模式下可以调节的属性有：</p>
+<ol>
+<li><p><code>Scale Factor</code>。调节它可以对当前 Canvas 下的所有 UI 进行缩放，这个值变大 UI 也会相应地变大。这个值是需要手动调节的，它并不会跟着屏幕大小的变化而变化。</p>
+</li>
+<li><p><code>Reference Pixels Per Unit</code>。该属性表示的是一个 Unity 单位所能容纳的像素的个数，这个值越小 UI 将会越大。</p>
+</li>
+</ol>
+<h2 id="Scale_With_Screen_Size">Scale With Screen Size</h2><p><code>Scale With Screen Size</code> 模式中 UI 的大小会随着屏幕的大小而变化。在这个模式下首先要设置 <code>Reference Resolution</code> 属性，该属通常与 UI 的设计尺寸一直，比如：有一组 为 1024 X 768 的屏幕设计的 UI，那么 <code>Reference Resolution</code> 可以设成这个值，这样就可以在游戏中更好的还原设计。这个模式下 UI 缩放的程度是由它所在的 <code>Canvas</code> 的缩放程度所决定的，如果 <code>Canvas</code> 缩放的分辩率的宽高比和 <code>Reference Resoltion</code> 中设置的分辨率的宽高比一至的话，那么 <code>Canvas</code> 里的 UI 进行和 <code>Canvas</code> 同样比例的缩放即可。</p>
+<p>举例来说：<code>Canvas</code> 的 <code>Reference Resolution</code> 为 600 X 400，在这个 <code>Canvas</code> 中有一个大小为 100 X 20 的 <code>Button</code>，当这个 <code>Canvas</code> 适配到 1200 X 800 屏幕时，宽高都要增大一倍，这时我们说 <code>Canvas</code> 大小增大了一倍，与此相对应的 <code>Canvas</code> 中 <code>Button</code> 也要增大一倍，即扩大到 200 X 40 大小，那么 <code>Canvas</code> 和 <code>UI</code> 的相对大小是一样的，我们可以把它叫做等比缩放。</p>
+<p>但是如果 <code>Canvas</code> 需要缩放的屏幕分辨率的长宽比和 <code>Reference Resolution</code> 不一样，那么缩放应该怎么进行？首先有一点可以确定那就是 <code>Canvas</code> 会铺满屏幕，剩下的需要考虑的是如何缩放 <code>Canvas</code> 中的 UI 了。如何对 UI 进行缩放就是由 <code>Screen Match Mode</code> 属性来决定了。<code>Screen Match Mode</code> 有三个模式，下面将具体说明一下这几种模式。</p>
+<h3 id="Match_Width_or_Height">Match Width or Height</h3><p>首先我们来看 <code>Match Width or Height</code>。在这一行为模式下 <code>Canvas</code> 中 UI 的大小缩放比例是参考 <code>Canvas</code> 中高度、宽度的缩放比例来进行缩放，而缩放比例的计算则是由<br><code>Match</code> 参数决定，这个参数一个在 0 与 1 之间的值。还是用举例的方式来说明这个值是怎么作用于 UI 的缩放的。</p>
+<ol>
+<li><p>值为0。在这种情况下，UI 缩放比例完全参考宽度的缩放比例。例如，一个 <code>Reference Resoltion</code> 为 600 X 400 的 <code>Canvas</code> 适配到 1200 X 500 的分辨率， 宽度增大了一倍，那么 <code>Canvas</code> 中的 UI 大小也要增大一倍，原来大小为 100 X 20 的 <code>Button</code> 就要变成 200 X 400 了。</p>
+</li>
+<li><p>值为1. 在这种情况下，UI 缩放比例完全参考高度的缩放比例。例如，一个 <code>Reference Resoltion</code> 为 600 X 400 的 <code>Canvas</code> 适配到 600 X 800 的分辨率， 高度增大了一倍，那么 <code>Canvas</code> 中的 UI 大小也要增大一倍，原来大小为 100 X 20 的 <code>Button</code> 就要也变成 200 X 400。</p>
+</li>
+<li><p>值为0到1之间的值. 在这种情况下，UI 缩放比例完要同时参考高度和宽度的缩放比例。例如， <code>Match</code> 值为0.4，一个 <code>Reference Resoltion</code> 为 600 X 400 的 <code>Canvas</code> 适配到 1800 X 800 的分辨率， 高度变为原来的2倍，而宽度则变为原来的3倍，那么 <code>Canvas</code> 中的 UI 大小就要变成原来的 （3 X 0.6 + 2 X 0.4 ）= 2.6 倍，原来大小为 100 X 20 的 <code>Button</code> 就要也变成 260 X 52。</p>
+</li>
+</ol>
+<h3 id="Expand">Expand</h3><p>然后是 <code>Expand</code> 模式。在这个模式中 <code>Canvas</code> 的大小会横向（Horizontally）或纵向（Vertical）的放大以适应屏幕的变化，使 <code>Canvas</code> 的显示分辨率不会小于设定的 <code>Reference Resolution</code> 值，所以在这种模式之下所有 UI 都能显示完全，只不过比例相对 <code>Canvas</code> 的大小变小了而已。</p>
+<p>例如：一个 <code>Reference Resoltion</code> 为 600 X 400 的 <code>Canvas</code> 适配到 600 X 200 的分辨率，那么 <code>Canvas</code> 的显示分辨率将会变成 1800 X 400，在这种情况下 UI 大小不变，而在视觉上变小了。</p>
+<h3 id="Shrink">Shrink</h3><p>最后是 <code>Shrink</code> 模式。 该模式中 <code>Canvas</code> 当屏幕的比例发生变化时会横向或纵向的去裁剪自己的大小，使得自己的大小不会大于之前设置的 <code>Reference Resolution</code> 值 。从表现上来看就会发现有的处于屏幕边缘或者尺寸较大的 UI 会变得显示不完全，其原因就是 <code>Canvas</code> 的显示分辨率变小了。</p>
+<p>例如：一个 <code>Reference Resoltion</code> 为 600 X 400 的 <code>Canvas</code> 适配到 500 X 200 的分辨率，那么 <code>Canvas</code> 的显示分辨率将会变为 500 X 200 ，如果之前在 <code>Canvas</code> 中有一张大小为 600 X 400 的图片，在这种情况下就不能显示完全了。</p>
+<h3 id="总结">总结</h3><p><code>Match Width or Height</code> 无论是适配到比 <code>Reference Resolution</code> 高还是低的分辨率时，<code>Canvas</code> 和它里面的 UI 都会进行一定比例的缩放，而 <code>Expand</code> 和 <code>Shrink</code> 在适配高于 <code>Reference Resolution</code> 的分辨率的屏幕时会同时缩放 <code>Cavans</code> 和它里面的 UI，而在适配低于 <code>Reference Resolution</code> 的分辨率的屏幕时只是改变 <code>Canvas</code> 的显示大小而不改变 UI 的大小。 </p>
+<h2 id="Constant_Physical_Size">Constant Physical Size</h2><p>这种模式下 UI 的物理大小（通常的单位是： millimeters、points、 或者 picas）将会保持不变，而显示的正确与否则取决于设备能否准确获取屏幕的 DPI。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2015-03-25T03:57:51.000Z"><a href="/2015/03/25/use-collider-rules/">Mar 25 2015</a></time>
       
       
