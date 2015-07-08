@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>C#.NET的泛型与反射 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="C#.NET的泛型与反射"/>
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-06-30T15:25:43.000Z"><a href="/2015/06/30/Generics and Reflection/">Jun 30 2015</a></time>
+      
+      
+  
+    <h1 class="title">C#.NET的泛型与反射</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="引言">引言</h4><p>在之前与同事的讨论中发现对C#泛型反射时的一些术语理解有些错误或者不够深刻，借此文对相应的知识进行一下整理。本文分为两个部分，第一部分主要简单的介绍一下 “运行时中泛型”，第二部分对泛型反射的一些术语进行解释并参照代码和输出结果进行分析和巩固。</p>
+<h4 id="CLR中的泛型">CLR中的泛型</h4><p>在.NET中将泛型类型或者泛型方法编译为MSIL时是包含有类型参数的元数据。也就是说在MSIL层面，只负责泛型的声明和使用，而泛型实例化是由CLR在运行时负责完成的。</p>
+<p>泛型声明：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public class Foo&lt;T&gt;</span><br><span class="line">&#123;</span><br><span class="line">    public void M1&lt;TU&gt;()</span><br><span class="line">    &#123;</span><br><span class="line">        // 泛型的使用</span><br><span class="line">        var listOne = new List&lt;Int32&gt;();</span><br><span class="line"></span><br><span class="line">        Console.WriteLine(typeof(TU));</span><br><span class="line">        Console.WriteLine(typeof(T));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述泛型类将被编译成名叫 Foo`1 &lt; T &gt; 的泛型类型 ,其 M1&lt; TU &gt; 泛型方法对应的IL代码如下：</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">.method <span class="keyword">public</span> hidebysig instance <span class="keyword">void</span>  M1&lt;TU&gt;() cil managed</span><br><span class="line">&#123;</span><br><span class="line">  <span class="comment">// 代码大小       40 (0x28)</span></span><br><span class="line">  .maxstack  <span class="number">1</span></span><br><span class="line">  .<span class="function">locals <span class="title">init</span> <span class="params">([<span class="number">0</span>] class [mscorlib]System.Collections.Generic.List`<span class="number">1</span>&lt;int32&gt; listOne)</span></span><br><span class="line">  IL_0000:  nop</span><br><span class="line">  IL_0001:  newobj     instance <span class="keyword">void</span> class [mscorlib]System.Collections.Generic.List`1&lt;int32&gt;::.<span class="title">ctor</span><span class="params">()</span></span><br><span class="line">  IL_0006:  stloc.0</span><br><span class="line">  IL_0007:  ldtoken    !!TU</span><br><span class="line">  IL_000c:  call       class [mscorlib]System.Type [mscorlib]System.Type::<span class="title">GetTypeFromHandle</span><span class="params">(valuetype [mscorlib]System.RuntimeTypeHandle)</span></span><br><span class="line">  IL_0011:  call       <span class="keyword">void</span> [mscorlib]System.Console::<span class="title">WriteLine</span><span class="params">(<span class="keyword">object</span>)</span></span><br><span class="line">  IL_0016:  nop</span><br><span class="line">  IL_0017:  ldtoken    !T</span><br><span class="line">  IL_001c:  call       class [mscorlib]System.Type [mscorlib]System.Type::<span class="title">GetTypeFromHandle</span><span class="params">(valuetype [mscorlib]System.RuntimeTypeHandle)</span></span><br><span class="line">  IL_0021:  call       <span class="keyword">void</span> [mscorlib]System.Console::<span class="title">WriteLine</span><span class="params">(<span class="keyword">object</span>)</span></span><br><span class="line">  IL_0026:  nop</span><br><span class="line">  IL_0027:  ret</span><br><span class="line">&#125; <span class="comment">// end of method Foo`1::M1</span></span></span><br></pre></td></tr></table></figure>
+<p>CLR会根据运行时提供的类型参数是值类型还是引用类型而不同，对于值类型CLR将会为每个类型创建(第一次遇到时)专用的泛型类型，对于引用类型则略有不同。所有的引用类型都会重用同一个泛型版本，大体上可以想象为所有的引用类型使用一个 Object 的泛型实例化版本。之所以这样设计，是因为引用的大小是相同的(32位系统上是32位,64位系统上是64位)，而值类型则不然。这样设计的好处是对于引用类型可以共享同一份native code, 避免“类型爆炸”。（实例化的泛型类型虽然享有独立的元数据，但是共享同一个EEClass，即其TypeHandle指向的MethodTable中的EEClass地址相同。）</p>
+<h4 id="泛型与反射">泛型与反射</h4><h5 id="一些术语">一些术语</h5><ol>
+<li><p>开放泛型类型/方法（open generic type/method）：所有泛型参数都未绑定值的泛型类型/方法定义，例如，Dictionary&lt; TKey, TVal &gt;。</p>
+</li>
+<li><p>开放构造类型/方法(open constructed type/method)：部分泛型参数绑定了具体类型的值的泛型类型/方法， 例如，Dictionary&lt; String, TVal&gt;。</p>
+</li>
+<li><p>封闭构造类型/方法(close constructed type/method)：按照 ContainsGenericParameters=true 来定义，分为两种：1）封闭泛型类型/方法（close generic type/method），所有泛型参数都绑定了具体类型的值的泛型类型/方法，例如，Dictionary&lt; String, Int32&gt;；2）普通的类型/方法。</p>
+</li>
+</ol>
+<p><strong><em>注意：在泛型类型上可以调用MakeGenericType生成构造类型，在泛型方法定义上调用MakeGenericMethod生成构造方法。ContainsGenericParameters 属性提供一种标准方法来区分封闭构造类型/方法（可以实例化/调用）和开放构造类型/方法（不能实例化/调用）。</em></strong></p>
+<pre><code>ContainsGenericParameters 属性递归搜索类型参数
+1、对于开放类型 A<span class="tag">&lt; <span class="attribute">T</span>&gt;</span> 上的所有方法调用 ContainsGenericParameters 都将返回true；
+2、对于下面代码中的 listOfSomeUnknownTypeOfList 类型，由于 g1是 开放泛型类型所以listOfSomeUnknownTypeOfList.ContainsGenericParameters 返回 true。
+
+<span class="comment"><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> gl = <span class="keyword">typeof</span>(List&lt;&gt;);</span><br><span class="line"><span class="keyword">var</span> listOfSomeUnknownTypeOfList = gl.MakeGenericType(gl);</span><br></pre></td></tr></table></figure></span>
+</code></pre><ol>
+<li><p>泛型类型：包括开放泛型类型、开放构造类型、封闭泛型类型</p>
+</li>
+<li><p>泛型方法：包括开放泛型方法、开放构造方法（注：不包括开放泛型类型、开放构造类型中的非泛型开放构造方法，见后面 “开放泛型类型（及开放构造类型）上的方法反射” 部分内容）、封闭泛型方法</p>
+</li>
+</ol>
+<a id="more"></a>
+<h5 id="泛型类型的反射">泛型类型的反射</h5><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> g = <span class="keyword">typeof</span>(Dictionary&lt;,&gt;);</span><br><span class="line">    <span class="keyword">var</span> g1 = g.MakeGenericType(<span class="keyword">new</span>[] &#123; <span class="keyword">typeof</span>(<span class="keyword">string</span>), g.GenericTypeArguments[<span class="number">1</span>] &#125;);</span><br><span class="line">    <span class="keyword">var</span> g2 = g.MakeGenericType(<span class="keyword">new</span>[] &#123; g1.GenericTypeArguments[<span class="number">0</span>], <span class="keyword">typeof</span>(<span class="keyword">int</span>) &#125;);</span><br><span class="line">     Console.WriteLine(<span class="string">"&#123;0&#125;, IsGenericType: &#123;1&#125;, IsGenericTypeDefinition: &#123;2&#125;, ContainsGenericParameters: &#123;3&#125;"</span>, g, g.IsGenericType, g.IsGenericTypeDefinition, g.ContainsGenericParameters);</span><br><span class="line">     Console.WriteLine(<span class="string">"&#123;0&#125;, IsGenericType: &#123;1&#125;, IsGenericTypeDefinition: &#123;2&#125;, ContainsGenericParameters: &#123;3&#125;"</span>, g1, g1.IsGenericType, g1.IsGenericTypeDefinition, g1.ContainsGenericParameters);</span><br><span class="line">     Console.WriteLine(<span class="string">"&#123;0&#125;, IsGenericType: &#123;1&#125;, IsGenericTypeDefinition: &#123;2&#125;, ContainsGenericParameters: &#123;3&#125;"</span>, g2, g2.IsGenericType, g2.IsGenericTypeDefinition, g2.ContainsGenericParameters);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出是：</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System.Collections.Generic.Dictionary`<span class="number">2</span>[TKey,TValue], IsGenericType: True, IsGenericTypeDefinition: True, ContainsGenericParameters: True</span><br><span class="line">System.Collections.Generic.Dictionary`<span class="number">2</span>[System.String,TValue], IsGenericType: True, IsGenericTypeDefinition: False, ContainsGenericParameters: True</span><br><span class="line">System.Collections.Generic.Dictionary`<span class="number">2</span>[System.String,System.Int32], IsGenericType: True, IsGenericTypeDefinition: False, ContainsGenericParameters: False</span><br></pre></td></tr></table></figure>
+<ol>
+<li>g是泛型类型定义, 也就是开放泛型类型；</li>
+<li>g1是开放构造类型；</li>
+<li>g2是封闭构造（泛型）类型。</li>
+</ol>
+<h5 id="泛型方法反射">泛型方法反射</h5><h6 id="普通类型的泛型方法反射">普通类型的泛型方法反射</h6><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title">Program</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span><span class="params">()</span></span><br><span class="line">    </span>&#123;</span><br><span class="line">        <span class="keyword">var</span> m = <span class="keyword">typeof</span>(Program).GetMethod(<span class="string">"Get"</span>);</span><br><span class="line">        <span class="keyword">var</span> m1 = m.MakeGenericMethod(<span class="keyword">new</span>[] &#123; <span class="keyword">typeof</span>(String), m.GetGenericArguments()[<span class="number">1</span>] &#125;);</span><br><span class="line">        <span class="keyword">var</span> m2 = m.MakeGenericMethod(<span class="keyword">new</span>[] &#123; <span class="keyword">typeof</span>(String), <span class="keyword">typeof</span>(Int32) &#125;);</span><br><span class="line">        Println(m);</span><br><span class="line">        Println(m1);</span><br><span class="line">        Println(m2);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Println</span><span class="params">(MethodInfo methodInfo)</span></span><br><span class="line">    </span>&#123;</span><br><span class="line">        Console.WriteLine(<span class="string">"&#123;0&#125;, IsGenericMethod: &#123;1&#125;, IsGenericMethodDefinition: &#123;2&#125;, ContainsGenericParameters: &#123;3&#125;"</span>, methodInfo, methodInfo.IsGenericMethod, methodInfo.IsGenericMethodDefinition, methodInfo.ContainsGenericParameters);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> TV Get&lt;TK, TV&gt;(TK key)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">default</span>(TV);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出是：<br><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">TV Get[TK,TV](TK), IsGenericMethod: True, IsGenericMethodDefinition: True, ContainsGenericParameters: True</span><br><span class="line">TV Get[String,TV](System.String), IsGenericMethod: True, IsGenericMethodDefinition: False, ContainsGenericParameters: True</span><br><span class="line">Int32 Get[String,Int32](System.String), IsGenericMethod: True, IsGenericMethodDefinition: False, ContainsGenericParameters: False</span><br></pre></td></tr></table></figure></p>
+<ol>
+<li>m是generic method definition，是开放泛型方法；</li>
+<li>m1是开放构造方法；</li>
+<li>m2是封闭构造（泛型）方法。</li>
+</ol>
+<h6 id="开放泛型类型（及开放构造类型）上的方法反射">开放泛型类型（及开放构造类型）上的方法反射</h6><p>泛型类型定义的方法如果仅仅包含有类级别的泛型参数，这样的方法是<a href="https://msdn.microsoft.com/zh-cn/library/twcad0zb.aspx" target="_blank" rel="external"><strong>非泛型方法，而不是泛型方法</strong></a>。结合CRL JIT在处理泛型的方式上可以更容易理解，对于泛型类型上的非泛型方法由于不包含方法级的类型化参数，在泛型实例化后是封闭的，在实例化类型的方法表（method table）里面是一个普通方法。而对于泛型类型上的泛型方法，泛型实例化以后也是开放的，这种方法是由特殊的方法表(special method table)来处理，通过调用时传入具体的类型参数进行索引得到相应的方法地址。详细的解释可参考 <a href="http://stackoverflow.com/questions/6573557/how-virtual-generic-method-call-is-implemented" target="_blank" rel="external">how-virtual-generic-method-call-is-implemented</a> 的回答。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">class Program</span><br><span class="line">&#123;</span><br><span class="line">    static void Main()</span><br><span class="line">    &#123;</span><br><span class="line">        var g = typeof(Foo&lt;&gt;).GetMethod("Get");</span><br><span class="line">        Println(g);</span><br><span class="line"></span><br><span class="line">        var m = typeof(Foo&lt;&gt;).GetMethod("M1");</span><br><span class="line">        var m1 = m.MakeGenericMethod(new[] &#123; typeof(String)&#125;);</span><br><span class="line">        Println(m);</span><br><span class="line">        Println(m1);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public static void Println(MethodInfo methodInfo)</span><br><span class="line">    &#123;</span><br><span class="line">        Console.WriteLine("&#123;0&#125;, IsGenericMethod: &#123;1&#125;, IsGenericMethodDefinition: &#123;2&#125;, ContainsGenericParameters: &#123;3&#125;", methodInfo, methodInfo.IsGenericMethod, methodInfo.IsGenericMethodDefinition, methodInfo.ContainsGenericParameters);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public class Foo&lt;T&gt;</span><br><span class="line">&#123;</span><br><span class="line">    public void M1&lt;V&gt;(V t)</span><br><span class="line">    &#123;</span><br><span class="line">        Console.WriteLine(typeof(V));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public T Get(String key)</span><br><span class="line">    &#123;</span><br><span class="line">        return default(T);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出是：<br><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">T <span class="title">Get</span><span class="params">(System.String)</span>, IsGenericMethod: False, IsGenericMethodDefinition: False, ContainsGenericParameters: True</span><br><span class="line">Void M1[V]<span class="params">(V)</span>, IsGenericMethod: True, IsGenericMethodDefinition: True, ContainsGenericParameters: True</span><br><span class="line">Void M1[String]<span class="params">(System.String)</span>, IsGenericMethod: True, IsGenericMethodDefinition: False, ContainsGenericParameters: True</span></span><br></pre></td></tr></table></figure></p>
+<ol>
+<li>g仅仅包含类级别的泛型参数，<strong>是开放构造方法，但不是泛型方法</strong></li>
+<li>m是泛型方法定义；</li>
+<li>m1是开放构造（泛型）方法，虽然方法类型参数已经绑定到具体类型String上，但方法依附的类型是开放泛型类型Foo&lt; T&gt;，所以ContainsGenericParameters=true，m1是不能被直接调用的。</li>
+</ol>
+<h6 id="封闭泛型类型上的方法反射">封闭泛型类型上的方法反射</h6><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">class Program</span><br><span class="line">    &#123;</span><br><span class="line">        static void Main()</span><br><span class="line">        &#123;</span><br><span class="line">            var g = typeof(Foo&lt;Int32&gt;).GetMethod("Get");</span><br><span class="line">            Println(g);</span><br><span class="line"></span><br><span class="line">            var m = typeof(Foo&lt;Int32&gt;).GetMethod("M1");</span><br><span class="line">            var m1 = m.MakeGenericMethod(new[] &#123; typeof(String)&#125;);</span><br><span class="line">            Println(m);</span><br><span class="line">            Println(m1);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        public static void Println(MethodInfo methodInfo)</span><br><span class="line">        &#123;</span><br><span class="line">            Console.WriteLine("&#123;0&#125;, IsGenericMethod: &#123;1&#125;, IsGenericMethodDefinition: &#123;2&#125;, ContainsGenericParameters: &#123;3&#125;", methodInfo, methodInfo.IsGenericMethod, methodInfo.IsGenericMethodDefinition, methodInfo.ContainsGenericParameters);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public class Foo&lt;T&gt;</span><br><span class="line">    &#123;</span><br><span class="line">        public void M1&lt;V&gt;(V t)</span><br><span class="line">        &#123;</span><br><span class="line">            Console.WriteLine(typeof(V));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        public T Get(String key)</span><br><span class="line">        &#123;</span><br><span class="line">            return default(T);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>输出是：<br><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Int32 <span class="title">Get</span><span class="params">(System.String)</span>, IsGenericMethod: False, IsGenericMethodDefinition: False, ContainsGenericParameters: False</span><br><span class="line">Void M1[V]<span class="params">(V)</span>, IsGenericMethod: True, IsGenericMethodDefinition: True, ContainsGenericParameters: True</span><br><span class="line">Void M1[String]<span class="params">(System.String)</span>, IsGenericMethod: True, IsGenericMethodDefinition: False, ContainsGenericParameters: False</span></span><br></pre></td></tr></table></figure></p>
+<ol>
+<li>g是封闭构造方法（一个普通方法）；</li>
+<li>m是泛型方法定义；</li>
+<li>m1是封闭泛型方法。</li>
+</ol>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/C-基础/">C#基础</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/C/">C#</a>, <a href="/tags/CLR/">CLR</a>, <a href="/tags/反射/">反射</a>, <a href="/tags/泛型/">泛型</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/06/30/Generics and Reflection/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜索">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分类</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>11</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">标签</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/AutoLayout/">AutoLayout</a><small>1</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>2</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/CLR/">CLR</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/反射/">反射</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/泛型/">泛型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

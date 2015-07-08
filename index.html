@@ -55,7 +55,7 @@
       
       
   
-    <h1 class="title"><a href="/2015/07/07/uGUI-AugoLayout/">nGUI之AutoLayout详解——minHeight,preferredHeight,flexibleHeight</a></h1>
+    <h1 class="title"><a href="/2015/07/07/uGUI-AugoLayout/">uGUI之AutoLayout详解——minHeight,preferredHeight,flexibleHeight</a></h1>
   
 
     </header>
@@ -92,6 +92,68 @@
     </div>
     <footer>
       
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-06-30T15:25:43.000Z"><a href="/2015/06/30/Generics and Reflection/">Jun 30 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/06/30/Generics and Reflection/">C#.NET的泛型与反射</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="引言">引言</h4><p>在之前与同事的讨论中发现对C#泛型反射时的一些术语理解有些错误或者不够深刻，借此文对相应的知识进行一下整理。本文分为两个部分，第一部分主要简单的介绍一下 “运行时中泛型”，第二部分对泛型反射的一些术语进行解释并参照代码和输出结果进行分析和巩固。</p>
+<h4 id="CLR中的泛型">CLR中的泛型</h4><p>在.NET中将泛型类型或者泛型方法编译为MSIL时是包含有类型参数的元数据。也就是说在MSIL层面，只负责泛型的声明和使用，而泛型实例化是由CLR在运行时负责完成的。</p>
+<p>泛型声明：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public class Foo&lt;T&gt;</span><br><span class="line">&#123;</span><br><span class="line">    public void M1&lt;TU&gt;()</span><br><span class="line">    &#123;</span><br><span class="line">        // 泛型的使用</span><br><span class="line">        var listOne = new List&lt;Int32&gt;();</span><br><span class="line"></span><br><span class="line">        Console.WriteLine(typeof(TU));</span><br><span class="line">        Console.WriteLine(typeof(T));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述泛型类将被编译成名叫 Foo`1 &lt; T &gt; 的泛型类型 ,其 M1&lt; TU &gt; 泛型方法对应的IL代码如下：</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">.method <span class="keyword">public</span> hidebysig instance <span class="keyword">void</span>  M1&lt;TU&gt;() cil managed</span><br><span class="line">&#123;</span><br><span class="line">  <span class="comment">// 代码大小       40 (0x28)</span></span><br><span class="line">  .maxstack  <span class="number">1</span></span><br><span class="line">  .<span class="function">locals <span class="title">init</span> <span class="params">([<span class="number">0</span>] class [mscorlib]System.Collections.Generic.List`<span class="number">1</span>&lt;int32&gt; listOne)</span></span><br><span class="line">  IL_0000:  nop</span><br><span class="line">  IL_0001:  newobj     instance <span class="keyword">void</span> class [mscorlib]System.Collections.Generic.List`1&lt;int32&gt;::.<span class="title">ctor</span><span class="params">()</span></span><br><span class="line">  IL_0006:  stloc.0</span><br><span class="line">  IL_0007:  ldtoken    !!TU</span><br><span class="line">  IL_000c:  call       class [mscorlib]System.Type [mscorlib]System.Type::<span class="title">GetTypeFromHandle</span><span class="params">(valuetype [mscorlib]System.RuntimeTypeHandle)</span></span><br><span class="line">  IL_0011:  call       <span class="keyword">void</span> [mscorlib]System.Console::<span class="title">WriteLine</span><span class="params">(<span class="keyword">object</span>)</span></span><br><span class="line">  IL_0016:  nop</span><br><span class="line">  IL_0017:  ldtoken    !T</span><br><span class="line">  IL_001c:  call       class [mscorlib]System.Type [mscorlib]System.Type::<span class="title">GetTypeFromHandle</span><span class="params">(valuetype [mscorlib]System.RuntimeTypeHandle)</span></span><br><span class="line">  IL_0021:  call       <span class="keyword">void</span> [mscorlib]System.Console::<span class="title">WriteLine</span><span class="params">(<span class="keyword">object</span>)</span></span><br><span class="line">  IL_0026:  nop</span><br><span class="line">  IL_0027:  ret</span><br><span class="line">&#125; <span class="comment">// end of method Foo`1::M1</span></span></span><br></pre></td></tr></table></figure>
+<p>CLR会根据运行时提供的类型参数是值类型还是引用类型而不同，对于值类型CLR将会为每个类型创建(第一次遇到时)专用的泛型类型，对于引用类型则略有不同。所有的引用类型都会重用同一个泛型版本，大体上可以想象为所有的引用类型使用一个 Object 的泛型实例化版本。之所以这样设计，是因为引用的大小是相同的(32位系统上是32位,64位系统上是64位)，而值类型则不然。这样设计的好处是对于引用类型可以共享同一份native code, 避免“类型爆炸”。（实例化的泛型类型虽然享有独立的元数据，但是共享同一个EEClass，即其TypeHandle指向的MethodTable中的EEClass地址相同。）</p>
+<h4 id="泛型与反射">泛型与反射</h4><h5 id="一些术语">一些术语</h5><ol>
+<li><p>开放泛型类型/方法（open generic type/method）：所有泛型参数都未绑定值的泛型类型/方法定义，例如，Dictionary&lt; TKey, TVal &gt;。</p>
+</li>
+<li><p>开放构造类型/方法(open constructed type/method)：部分泛型参数绑定了具体类型的值的泛型类型/方法， 例如，Dictionary&lt; String, TVal&gt;。</p>
+</li>
+<li><p>封闭构造类型/方法(close constructed type/method)：按照 ContainsGenericParameters=true 来定义，分为两种：1）封闭泛型类型/方法（close generic type/method），所有泛型参数都绑定了具体类型的值的泛型类型/方法，例如，Dictionary&lt; String, Int32&gt;；2）普通的类型/方法。</p>
+</li>
+</ol>
+<p><strong><em>注意：在泛型类型上可以调用MakeGenericType生成构造类型，在泛型方法定义上调用MakeGenericMethod生成构造方法。ContainsGenericParameters 属性提供一种标准方法来区分封闭构造类型/方法（可以实例化/调用）和开放构造类型/方法（不能实例化/调用）。</em></strong></p>
+<pre><code>ContainsGenericParameters 属性递归搜索类型参数
+1、对于开放类型 A<span class="tag">&lt; <span class="attribute">T</span>&gt;</span> 上的所有方法调用 ContainsGenericParameters 都将返回true；
+2、对于下面代码中的 listOfSomeUnknownTypeOfList 类型，由于 g1是 开放泛型类型所以listOfSomeUnknownTypeOfList.ContainsGenericParameters 返回 true。
+
+<span class="comment"><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> gl = <span class="keyword">typeof</span>(List&lt;&gt;);</span><br><span class="line"><span class="keyword">var</span> listOfSomeUnknownTypeOfList = gl.MakeGenericType(gl);</span><br></pre></td></tr></table></figure></span>
+</code></pre><ol>
+<li><p>泛型类型：包括开放泛型类型、开放构造类型、封闭泛型类型</p>
+</li>
+<li><p>泛型方法：包括开放泛型方法、开放构造方法（注：不包括开放泛型类型、开放构造类型中的非泛型开放构造方法，见后面 “开放泛型类型（及开放构造类型）上的方法反射” 部分内容）、封闭泛型方法</p>
+</li>
+</ol>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/06/30/Generics and Reflection/#more" class="more-link">Read More</a>
+          </div>
         
         
       
@@ -555,95 +617,28 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
 
 
 
-  <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-04-06T23:20:21.000Z"><a href="/2015/04/07/uGUI-note/">Apr 7 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/04/07/uGUI-note/">uGUI学习笔记</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <p>看Unity3D文档像看国内教课书一样，一些概念，不懂的时候看还是不懂，明白了以后再看，好像也没有说错。好几个做Unity3D的朋友跟我吐槽过U3D的文档质量，相比Apple贴心的技术文档相去甚远。</p>
-<p>话虽这么说，权威的资料当然还是官方的，建议先仔细读一遍，不懂的再往下读：<br><a href="http://docs.unity3d.com/Manual/UISystem.html" target="_blank" rel="external">http://docs.unity3d.com/Manual/UISystem.html</a></p>
-<p>网上的教程大多泛泛而谈，就不吐槽了。好在还找到了一篇比较好的解读，在此谢谢作者白猫。文章链接在下面<br><a href="http://www.cnblogs.com/whitecat/p/4159815.html" target="_blank" rel="external">http://www.cnblogs.com/whitecat/p/4159815.html</a></p>
-<p>uGUI里面AutoLayout比较特别，我就此详细描述一下，希望能减少“教科书”的理解障碍。</p>
-<h1 id="RectTransform的理解">RectTransform的理解</h1><p>UI元素有专门的RectTransform组件来描述元素的几何信息，继承于Transform，Inspector中其属性如下图。</p>
-<p><img src="/images/585ba00d8b9a20380a69c5cb2ef4e9dad90bb62b.png" alt="RectTransform属性"></p>
-<h2 id="Anchors，锚点">Anchors，锚点</h2><p>我们首先需要认识Anchors。官网上的图片很好表达了Andhors的功能，请恕我实践下拿来主义。</p>
-<p><img src="/images/63d987fd54c5c5cec135c90b92d2ccc735d88190.gif" alt="锚点全在中间的情况"></p>
-<p><img src="/images/3f2a5e9f2e6b27eb58aaf7490d818158492f1d1a.gif" alt="锚点全在右下角的情况"></p>
-<p><img src="/images/164d81f4bdb29635f2db9aff5e4141104e005c60.gif" alt="锚点在两个角的情况"></p>
-<p><img src="/images/fd56ce926885f0c5a360c9e8e5e6bba9514b88bc.gif" alt="锚点分开的情况"></p>
-<p>善于观察的同学可能已经发现，不管什么情况，button的四个顶点到相应锚点的相对位置是不变的：</p>
-<p><img src="/images/dd5e601d24262b7a4c96cce3772ee9821022da0a.png" alt="规律：button的四个顶点到相应锚点的相对位置是不变的"></p>
-<p>当4个锚点都在一起的时候，RectTransform会显示Pos X，Pos Y，Width，Height四个属性可供修改。<br><img src="/images/968a79f838772208f234e3b9b58ae411414e9909.png" alt="当4个锚点都在一起"></p>
-<p>当不在一起的时候，RectTransform可调整的属性会有变化。</p>
-<p><img src="/images/3fc8baa8e7f0d0910d79b81068414bc2f47d0079.png" alt="锚点不在一起的时候，Inspector中变化1"></p>
-<p><img src="/images/451585ad80225ad3615a2f2ceffc30764e06d8a9.png" alt="锚点不在一起的时候，Inspector中变化2"></p>
-<p><img src="/images/f2fdb1def57b3a778f8685c32bf903e15cefff01.png" alt="锚点不在一起的时候，Inspector中变化3"></p>
-<p>Anchors的Min和Max分别是正规化的值(从0到1)，表示占父RectTransform的百分比，下图中AnchorMin=(0.1,0.1)  AnchorMax=(0.9,0.9)</p>
-<p><img src="/images/d3ad3d6746b850735662f220087a207d9a42d0ef.png" alt="AnchorMin、AnchorMax"></p>
-<h2 id="Pivot，UI的中心点">Pivot，UI的中心点</h2><p>UI元素的旋转和缩放是围绕pivot进行的。RectTransform组件中，Pivot属性是一个正规化的二维向量，用来描述中心点在本身矩形大小的位置。默认值为(0.5, 0.5)，即几何中心。</p>
-<p>以上是RectTransform可视化的编辑属性，实际上RectTransform类的属性是怎样的？查阅RectTransform的官方文档如下：</p>
-<p><a href="">anchoredPosition</a><br>The position of the pivot of this RectTransform relative to the anchor reference point.</p>
-<p><a href="">anchoredPosition3D</a><br>The 3D position of the pivot of this RectTransform relative to the anchor reference point.</p>
-<p><a href="">anchorMax</a><br>The normalized position in the parent RectTransform that the upper right corner is anchored to.</p>
-<p><a href="">anchorMin</a><br>The normalized position in the parent RectTransform that the lower left corner is anchored to.</p>
-<p><a href="">offsetMax</a><br>The offset of the upper right corner of the rectangle relative to the upper right anchor.</p>
-<p><a href="">offsetMin</a><br>The offset of the lower left corner of the rectangle relative to the lower left anchor.</p>
-<p><a href="">pivot</a><br>The normalized position in this RectTransform that it rotates around.</p>
-<p><a href="">rect</a><br>The calculated rectangle in the local space of the Transform.</p>
-<p><a href="">sizeDelta</a><br>The size of this RectTransform relative to the distances between the anchors.</p>
-<p>乍一看有点费解，这里有必要解释下：</p>
-<h4 id="anchoredPosition">anchoredPosition</h4><p>可以理解为Pivot点相对于Anchor reference点的位置。Anchor reference点，我是这样理解的：当四个anchors点在一起的时候，这个点就是anchor reference点；否则这四个点的中心点就是anchor reference点。<br>照这个推理，anchorMax和anchorMin的值将影响anchoredPosition的值。具体还需要demo研究来确认。[Bugfix]</p>
-<p>但可以确定的是，当一个UI元素不需要自动拉伸行为时，用anchoredPosition + sizeDelta来设置位置和大小是比较方便的方法。</p>
-<p>anchorMax、anchorMin和Inspector中的意义一致，需要注意的是，当UI元素不需要自动拉伸时，AnchorMax和AnchorMin是相等的。<br><img src="/images/ca6bd7ee124216a8f46a70cf046eac084f3d58eb.png" alt="AnchorMin与AnchorMax"></p>
-<p>UI元素需要自动拉伸时，使用anchorMax、anchorMin + offsetMax、offsetMin来设置UI的位置及大小会比较方便。<br>其中，anchorMax.x == anchorMin.x，height会自动拉伸，width固定不变。<br>anchorMax.y == anchorMin.y，width会自动拉伸，height固定不变。</p>
-<p>不知不觉已过凌晨1点，先介绍到这里。关于uGUI的更多内容，将在下一篇博文中继续，敬请期待。</p>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-
 
 <nav id="pagination">
   
   
-    <a href="/page/2/" class="alignright next">下一頁</a>
+    <a href="/page/2/" class="alignright next">下一页</a>
   
   <div class="clearfix"></div>
 </nav></div></div>
     <aside id="sidebar" class="alignright">
   <div class="search">
   <form action="//google.com/search" method="get" accept-charset="utf-8">
-    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="search" name="q" results="0" placeholder="搜索">
     <input type="hidden" name="q" value="site:blog.jidanke.com">
   </form>
 </div>
 
   
 <div class="widget tag">
-  <h3 class="title">分類</h3>
+  <h3 class="title">分类</h3>
   <ul class="entry">
+  
+    <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
   
     <li><a href="/categories/Unity3D/">Unity3D</a><small>11</small></li>
   
@@ -661,16 +656,18 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
 
   
 <div class="widget tag">
-  <h3 class="title">標籤</h3>
+  <h3 class="title">标签</h3>
   <ul class="entry">
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
   
     <li><a href="/tags/AutoLayout/">AutoLayout</a><small>1</small></li>
   
-    <li><a href="/tags/C/">C#</a><small>1</small></li>
+    <li><a href="/tags/C/">C#</a><small>2</small></li>
   
     <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/CLR/">CLR</a><small>1</small></li>
   
     <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
   
@@ -730,7 +727,11 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
   
     <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
   
+    <li><a href="/tags/反射/">反射</a><small>1</small></li>
+  
     <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/泛型/">泛型</a><small>1</small></li>
   
     <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
   

@@ -1,0 +1,267 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>泛型 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title tag">泛型</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-06-30T15:25:43.000Z"><a href="/2015/06/30/Generics and Reflection/">Jun 30 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/06/30/Generics and Reflection/">C#.NET的泛型与反射</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h4 id="引言">引言</h4><p>在之前与同事的讨论中发现对C#泛型反射时的一些术语理解有些错误或者不够深刻，借此文对相应的知识进行一下整理。本文分为两个部分，第一部分主要简单的介绍一下 “运行时中泛型”，第二部分对泛型反射的一些术语进行解释并参照代码和输出结果进行分析和巩固。</p>
+<h4 id="CLR中的泛型">CLR中的泛型</h4><p>在.NET中将泛型类型或者泛型方法编译为MSIL时是包含有类型参数的元数据。也就是说在MSIL层面，只负责泛型的声明和使用，而泛型实例化是由CLR在运行时负责完成的。</p>
+<p>泛型声明：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public class Foo&lt;T&gt;</span><br><span class="line">&#123;</span><br><span class="line">    public void M1&lt;TU&gt;()</span><br><span class="line">    &#123;</span><br><span class="line">        // 泛型的使用</span><br><span class="line">        var listOne = new List&lt;Int32&gt;();</span><br><span class="line"></span><br><span class="line">        Console.WriteLine(typeof(TU));</span><br><span class="line">        Console.WriteLine(typeof(T));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述泛型类将被编译成名叫 Foo`1 &lt; T &gt; 的泛型类型 ,其 M1&lt; TU &gt; 泛型方法对应的IL代码如下：</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">.method <span class="keyword">public</span> hidebysig instance <span class="keyword">void</span>  M1&lt;TU&gt;() cil managed</span><br><span class="line">&#123;</span><br><span class="line">  <span class="comment">// 代码大小       40 (0x28)</span></span><br><span class="line">  .maxstack  <span class="number">1</span></span><br><span class="line">  .<span class="function">locals <span class="title">init</span> <span class="params">([<span class="number">0</span>] class [mscorlib]System.Collections.Generic.List`<span class="number">1</span>&lt;int32&gt; listOne)</span></span><br><span class="line">  IL_0000:  nop</span><br><span class="line">  IL_0001:  newobj     instance <span class="keyword">void</span> class [mscorlib]System.Collections.Generic.List`1&lt;int32&gt;::.<span class="title">ctor</span><span class="params">()</span></span><br><span class="line">  IL_0006:  stloc.0</span><br><span class="line">  IL_0007:  ldtoken    !!TU</span><br><span class="line">  IL_000c:  call       class [mscorlib]System.Type [mscorlib]System.Type::<span class="title">GetTypeFromHandle</span><span class="params">(valuetype [mscorlib]System.RuntimeTypeHandle)</span></span><br><span class="line">  IL_0011:  call       <span class="keyword">void</span> [mscorlib]System.Console::<span class="title">WriteLine</span><span class="params">(<span class="keyword">object</span>)</span></span><br><span class="line">  IL_0016:  nop</span><br><span class="line">  IL_0017:  ldtoken    !T</span><br><span class="line">  IL_001c:  call       class [mscorlib]System.Type [mscorlib]System.Type::<span class="title">GetTypeFromHandle</span><span class="params">(valuetype [mscorlib]System.RuntimeTypeHandle)</span></span><br><span class="line">  IL_0021:  call       <span class="keyword">void</span> [mscorlib]System.Console::<span class="title">WriteLine</span><span class="params">(<span class="keyword">object</span>)</span></span><br><span class="line">  IL_0026:  nop</span><br><span class="line">  IL_0027:  ret</span><br><span class="line">&#125; <span class="comment">// end of method Foo`1::M1</span></span></span><br></pre></td></tr></table></figure>
+<p>CLR会根据运行时提供的类型参数是值类型还是引用类型而不同，对于值类型CLR将会为每个类型创建(第一次遇到时)专用的泛型类型，对于引用类型则略有不同。所有的引用类型都会重用同一个泛型版本，大体上可以想象为所有的引用类型使用一个 Object 的泛型实例化版本。之所以这样设计，是因为引用的大小是相同的(32位系统上是32位,64位系统上是64位)，而值类型则不然。这样设计的好处是对于引用类型可以共享同一份native code, 避免“类型爆炸”。（实例化的泛型类型虽然享有独立的元数据，但是共享同一个EEClass，即其TypeHandle指向的MethodTable中的EEClass地址相同。）</p>
+<h4 id="泛型与反射">泛型与反射</h4><h5 id="一些术语">一些术语</h5><ol>
+<li><p>开放泛型类型/方法（open generic type/method）：所有泛型参数都未绑定值的泛型类型/方法定义，例如，Dictionary&lt; TKey, TVal &gt;。</p>
+</li>
+<li><p>开放构造类型/方法(open constructed type/method)：部分泛型参数绑定了具体类型的值的泛型类型/方法， 例如，Dictionary&lt; String, TVal&gt;。</p>
+</li>
+<li><p>封闭构造类型/方法(close constructed type/method)：按照 ContainsGenericParameters=true 来定义，分为两种：1）封闭泛型类型/方法（close generic type/method），所有泛型参数都绑定了具体类型的值的泛型类型/方法，例如，Dictionary&lt; String, Int32&gt;；2）普通的类型/方法。</p>
+</li>
+</ol>
+<p><strong><em>注意：在泛型类型上可以调用MakeGenericType生成构造类型，在泛型方法定义上调用MakeGenericMethod生成构造方法。ContainsGenericParameters 属性提供一种标准方法来区分封闭构造类型/方法（可以实例化/调用）和开放构造类型/方法（不能实例化/调用）。</em></strong></p>
+<pre><code>ContainsGenericParameters 属性递归搜索类型参数
+1、对于开放类型 A<span class="tag">&lt; <span class="attribute">T</span>&gt;</span> 上的所有方法调用 ContainsGenericParameters 都将返回true；
+2、对于下面代码中的 listOfSomeUnknownTypeOfList 类型，由于 g1是 开放泛型类型所以listOfSomeUnknownTypeOfList.ContainsGenericParameters 返回 true。
+
+<span class="comment"><figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> gl = <span class="keyword">typeof</span>(List&lt;&gt;);</span><br><span class="line"><span class="keyword">var</span> listOfSomeUnknownTypeOfList = gl.MakeGenericType(gl);</span><br></pre></td></tr></table></figure></span>
+</code></pre><ol>
+<li><p>泛型类型：包括开放泛型类型、开放构造类型、封闭泛型类型</p>
+</li>
+<li><p>泛型方法：包括开放泛型方法、开放构造方法（注：不包括开放泛型类型、开放构造类型中的非泛型开放构造方法，见后面 “开放泛型类型（及开放构造类型）上的方法反射” 部分内容）、封闭泛型方法</p>
+</li>
+</ol>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/06/30/Generics and Reflection/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+
+  <nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav>
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜索">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分类</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>11</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">标签</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/AutoLayout/">AutoLayout</a><small>1</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>2</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/CLR/">CLR</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/反射/">反射</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/泛型/">泛型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
