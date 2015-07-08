@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>I/O mutiplexing | JiDanKe</title>
+  <title>第 2 頁 | Unity3D | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -45,7 +45,7 @@
 <div class="clearfix"></div></header>
   <div id="content" class="inner">
     <div id="main-col" class="alignleft"><div id="wrapper">
-<h2 class="archive-title tag">I/O mutiplexing</h2>
+<h2 class="archive-title category">Unity3D</h2>
 
 
   
@@ -55,33 +55,33 @@
     <header>
       
         <div class="icon"></div>
-        <time datetime="2015-04-22T07:35:16.000Z"><a href="/2015/04/22/mutiplexing-IO/">Apr 22 2015</a></time>
+        <time datetime="2015-03-19T10:54:39.000Z"><a href="/2015/03/19/Unity-BreakPoint/">Mar 19 2015</a></time>
       
       
   
-    <h1 class="title"><a href="/2015/04/22/mutiplexing-IO/">I/O 复用：select、poll和epoll</a></h1>
+    <h1 class="title"><a href="/2015/03/19/Unity-BreakPoint/">Unity断点调试</a></h1>
   
 
     </header>
     <div class="entry">
       
-        <h4 id="引言">引言</h4><p>在<strong>阻塞式I/</strong>O模型下，一个线程只能处理一个流的I/O事件，为了同时高效处理多个流，只能采用多进程（fork）或者多线程的方式。</p>
-<p>使用<strong>非阻塞I/O</strong>模型，可以通过循环遍历的方式同时处理多个流（忙轮询），但是如果所有流都没有数据，就会造成CPU的浪费（在一些服务端应用程序上便不高效）。</p>
-<p>为了避免CPU的浪费，引入一个代理（<strong>select/poll，I/O复用</strong>），这个代理能够同时监视多个流的事件，当没有流事件发生时阻塞调用线程，释放CPU资源。</p>
-<p>虽然select/poll能够同时监视多个流（描述符）事件，但是并不知道具体是哪一个流的事件发生，其实现是遍历所有的描述符，故称为无差别轮询。随着监视的描述符增多，性能会下降，并且有些系统实现里面单个进程监视的描述符数量是有最大限制的。</p>
-<p>所以有了epoll（linux）/kqueue（freebsd）/iocp（windows）的出现，不同于非阻塞式I/O的忙轮询和I/O复用的无差别轮询，epoll只在某个流事件发生时通知调用者（内核实现）。</p>
-<h4 id="select">select</h4><p>调用select告诉内核对那些描述符（就读、写或异常条件）感兴趣以及等待多长时间。感兴趣的描述符不局限于套接字，任何描述符都可以使用select来测试。以下为select的函数签名：</p>
-<img src="/2015/04/22/mutiplexing-IO/select.png">
-<p>select 函数监视的文件描述符分3类，分别是readfds、writefds和exceptfds（都是值-结果参数）。调用后select函数会阻塞，直到有描述符就绪（有数据可读、可写、或者有异常）或者超时（timeout指定等待时间， <del>如果立即返回设为null即可</del>），函数返回。当select函数返回后，可以 通过遍历fdset，来找到就绪的描述符。</p>
-<p>timeout告知内核等待所指定的描述符中的任何一个就绪可花多长时间。其timeval结构用于指定这段时间的秒数和微妙数（虽然允许指定，实际上由于操作系统内核实现的原因这个微秒级的分辨率实际上并不很精确）。<br>
+        <p>有时候调试程序，断点信息可以很方便定位问题，Unity支持使用自带的MonoDevelop进行断点调试，但这个功能做的很不友好，经常Attach进程无响应。这里就记录一个成功率比较高的方法，避免浪费时间。</p>
+<ol>
+<li><p>打开Unity、MonoDevelop</p>
+</li>
+<li><p>在Unity中，Assets -&gt; Sync MonoDevelop Project</p>
+</li>
+<li><p>在MonoDevelop中，Run -&gt; Attach to Process…</p>
+</li>
+</ol>
+<p>选择Unity Editor (Unity)，点击Attach按钮  </p>
+<p><img src="/images/201503191901.png" alt=""></p>
+<p>这个经测试，不是每次都成功:（，如果无响应，那么请cmd+Q退出Unity和MonoDevelop，大侠请回到step1重新来过。</p>
+
       
     </div>
     <footer>
       
-        
-          <div class="alignleft">
-            <a href="/2015/04/22/mutiplexing-IO/#more" class="more-link">Read More</a>
-          </div>
         
         
       
@@ -95,6 +95,8 @@
   
 
   <nav id="pagination">
+  
+    <a href="/categories/Unity3D/" class="alignleft prev">上一頁</a>
   
   
   <div class="clearfix"></div>

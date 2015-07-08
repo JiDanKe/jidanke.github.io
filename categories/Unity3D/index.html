@@ -55,6 +55,64 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2015-07-07T12:39:12.000Z"><a href="/2015/07/07/uGUI-AugoLayout/">Jul 7 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/07/07/uGUI-AugoLayout/">nGUI之AutoLayout详解——minHeight,preferredHeight,flexibleHeight</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>首先看一个例子，新建一个Panel，在下面添加两个Button，分别命名为Button、Button2。<br>1、给Panel添加一个VerticalLayoutGroup组件，ChildForceExpand属性中勾上Width。<br>2、给Button、Button2添加LayoutElement组件，其中Button的FlexibleHeight设置为0.3，Button2的FlexibleHeight设置为0.1<br>3、将Panel的高度设置为100</p>
+<p><img src="/images/cc7b7acff95f50dacd518d7fc8858ce81361114b.png" alt="1-1"></p>
+<p><img src="/images/fb0e7991d0ed8d5cb82b8f80489162b29ddbb225.png" alt="1-2"></p>
+<p>这时我们发现，Button的高度是70，Button2的高度是30。奇怪，这个高度是怎么算出来的呢？</p>
+<p>网上搜索一番，竟然很少有人讨论uGUI的AutoLayout，尤其是flexibleWidth/Height属性的意义，官方文档也语焉不详。这时只能放大招了，uGUI已经开源，索性把代码拉下来看看到底怎么实现的。下面是托管代码的地址：<br><a href="https://bitbucket.org/Unity-Technologies/ui" target="_blank" rel="external">https://bitbucket.org/Unity-Technologies/ui</a></p>
+<p>uGUI的AutoLayout有三个核心接口，定义在ILayoutElement.cs文件中：<br>ILayoutElement<br>ILayoutController<br>ILayoutIgnorer</p>
+<p>结构很清晰，由ILayoutElement提供布局信息，ILayoutController来控制布局，ILayoutIgnore提供给UI忽略AutoLayout的能力。</p>
+<p>例子中使用的VerticalLayoutGroup继承自HorizontalOrVerticalLayoutGroup，这个类实现了布局的核心逻辑，代码量不多，我就直接贴上来了<br><figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line">protected void CalcAlongAxis(int axis, bool isVertical)</span><br><span class="line">&#123;</span><br><span class="line">    float <span class="variable">combinedPadding =</span> (<span class="variable">axis =</span>= <span class="number">0</span> ? padding.horizontal : padding.vertical);</span><br><span class="line"></span><br><span class="line">    float <span class="variable">totalMin =</span> combinedPadding;</span><br><span class="line">    float <span class="variable">totalPreferred =</span> combinedPadding;</span><br><span class="line">    float <span class="variable">totalFlexible =</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    bool <span class="variable">alongOtherAxis =</span> (isVertical ^ (<span class="variable">axis =</span>= <span class="number">1</span>));</span><br><span class="line">    for (int <span class="variable">i =</span> <span class="number">0</span>; i &lt; rectChildren.Count; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        RectTransform <span class="variable">child =</span> rectChildren[i];</span><br><span class="line">        float <span class="variable">min =</span> LayoutUtility.GetMinSize(child, axis);</span><br><span class="line">        float <span class="variable">preferred =</span> LayoutUtility.GetPreferredSize(child, axis);</span><br><span class="line">        float <span class="variable">flexible =</span> LayoutUtility.GetFlexibleSize(child, axis);</span><br><span class="line">        <span class="keyword">if</span> ((<span class="variable">axis =</span>= <span class="number">0</span> ? childForceExpandWidth : childForceExpandHeight))</span><br><span class="line">            <span class="variable">flexible =</span> Mathf.Max(flexible, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (alongOtherAxis)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="variable">totalMin =</span> Mathf.Max(min + combinedPadding, totalMin);</span><br><span class="line">            <span class="variable">totalPreferred =</span> Mathf.Max(preferred + combinedPadding, totalPreferred);</span><br><span class="line">            <span class="variable">totalFlexible =</span> Mathf.Max(flexible, totalFlexible);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            totalMin += min + spacing;</span><br><span class="line">            totalPreferred += preferred + spacing;</span><br><span class="line"></span><br><span class="line">            // Increment flexible size <span class="keyword">with</span> element's flexible size.</span><br><span class="line">            totalFlexible += flexible;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!alongOtherAxis &amp;&amp; rectChildren.Count &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        totalMin <span class="variable">-=</span> spacing;</span><br><span class="line">        totalPreferred <span class="variable">-=</span> spacing;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="variable">totalPreferred =</span> Mathf.Max(totalMin, totalPreferred);</span><br><span class="line">    SetLayoutInputForAxis(totalMin, totalPreferred, totalFlexible, axis);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">protected void SetChildrenAlongAxis(int axis, bool isVertical)</span><br><span class="line">&#123;</span><br><span class="line">    float <span class="variable">size =</span> rectTransform.rect.size[axis];</span><br><span class="line"></span><br><span class="line">    bool <span class="variable">alongOtherAxis =</span> (isVertical ^ (<span class="variable">axis =</span>= <span class="number">1</span>));</span><br><span class="line">    <span class="keyword">if</span> (alongOtherAxis)</span><br><span class="line">    &#123;</span><br><span class="line">        float <span class="variable">innerSize =</span> size - (<span class="variable">axis =</span>= <span class="number">0</span> ? padding.horizontal : padding.vertical);</span><br><span class="line">        for (int <span class="variable">i =</span> <span class="number">0</span>; i &lt; rectChildren.Count; i++)</span><br><span class="line">        &#123;</span><br><span class="line">            RectTransform <span class="variable">child =</span> rectChildren[i];</span><br><span class="line">            float <span class="variable">min =</span> LayoutUtility.GetMinSize(child, axis);</span><br><span class="line">            float <span class="variable">preferred =</span> LayoutUtility.GetPreferredSize(child, axis);</span><br><span class="line">            float <span class="variable">flexible =</span> LayoutUtility.GetFlexibleSize(child, axis);</span><br><span class="line">            <span class="keyword">if</span> ((<span class="variable">axis =</span>= <span class="number">0</span> ? childForceExpandWidth : childForceExpandHeight))</span><br><span class="line">                <span class="variable">flexible =</span> Mathf.Max(flexible, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">            float <span class="variable">requiredSpace =</span> Mathf.Clamp(innerSize, min, flexible &gt; <span class="number">0</span> ? size : preferred);</span><br><span class="line">            float <span class="variable">startOffset =</span> GetStartOffset(axis, requiredSpace);</span><br><span class="line">            SetChildAlongAxis(child, axis, startOffset, requiredSpace);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        float <span class="variable">pos =</span> (<span class="variable">axis =</span>= <span class="number">0</span> ? padding.left : padding.top);</span><br><span class="line">        <span class="keyword">if</span> (GetTotalFlexibleSize(axis) == <span class="number">0</span> &amp;&amp; GetTotalPreferredSize(axis) &lt; size)</span><br><span class="line">            <span class="variable">pos =</span> GetStartOffset(axis, GetTotalPreferredSize(axis) - (<span class="variable">axis =</span>= <span class="number">0</span> ? padding.horizontal : padding.vertical));</span><br><span class="line"></span><br><span class="line">        float <span class="variable">minMaxLerp =</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span> (GetTotalMinSize(axis) != GetTotalPreferredSize(axis))</span><br><span class="line">            <span class="variable">minMaxLerp =</span> Mathf.Clamp01((size - GetTotalMinSize(axis)) / (GetTotalPreferredSize(axis) - GetTotalMinSize(axis)));</span><br><span class="line"></span><br><span class="line">        float <span class="variable">itemFlexibleMultiplier =</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">if</span> (size &gt; GetTotalPreferredSize(axis))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (GetTotalFlexibleSize(axis) &gt; <span class="number">0</span>)</span><br><span class="line">                <span class="variable">itemFlexibleMultiplier =</span> (size - GetTotalPreferredSize(axis)) / GetTotalFlexibleSize(axis);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        for (int <span class="variable">i =</span> <span class="number">0</span>; i &lt; rectChildren.Count; i++)</span><br><span class="line">        &#123;</span><br><span class="line">            RectTransform <span class="variable">child =</span> rectChildren[i];</span><br><span class="line">            float <span class="variable">min =</span> LayoutUtility.GetMinSize(child, axis);</span><br><span class="line">            float <span class="variable">preferred =</span> LayoutUtility.GetPreferredSize(child, axis);</span><br><span class="line">            float <span class="variable">flexible =</span> LayoutUtility.GetFlexibleSize(child, axis);</span><br><span class="line">            <span class="keyword">if</span> ((<span class="variable">axis =</span>= <span class="number">0</span> ? childForceExpandWidth : childForceExpandHeight))</span><br><span class="line">                <span class="variable">flexible =</span> Mathf.Max(flexible, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">            float <span class="variable">childSize =</span> Mathf.Lerp(min, preferred, minMaxLerp);</span><br><span class="line">            childSize += flexible * itemFlexibleMultiplier;</span><br><span class="line">            SetChildAlongAxis(child, axis, pos, childSize);</span><br><span class="line">            pos += childSize + spacing;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>其中SetChildrenAlongAxis方法清晰地阐释了minHeight,preferredHeight,flexibleHeight的涵义。</p>
+<p>为了帮助理解，我们先定义几个概念。我们把当前UI所有同级并参与自动布局的组件的preferredHeight总和称为totalPreferredHeight，minHeight的总和称为totalMinHeight，父UI的真实高度称为realHeight。总结如下：</p>
+<p>1、<strong>minHeight</strong><br>在自动布局中，此UI最小高度不会小于minHeight。这个参数定义了realHeight &lt; totalMinHeight时，当前子UI的height为minHeight。</p>
+<p>2、<strong>preferredHeight</strong><br>可以理解为，UI自身希望的高度。<br>当totalMinHeight &lt; realHeight  &lt; totalPreferredHeight时，realHeight处于totalMinHeight和totalPreferredHeight之间一定百分比，把这个比例应用到每一个接受自动布局的子UI上，即是我们最终得到的效果</p>
+<p><img src="/images/b63ec5b54e3cbcd3e42717dbcd468d4b701fb090.png" alt="1-3"></p>
+<p>3、<strong>flexibleHeight</strong><br>当realHeight &gt; totalPreferredHeight时，父UI会剩下一部分高度。flexibleHeight就是告诉AutoLayout系统，应该怎么瓜分剩下的高度，使子UI填充满父UI。flexibleHeight默认是-1，不会进行扩充。当flexibleHeight &gt; 0时，flexibleHeight值作为权重来计算当前子UI最终的高度，公式如下：</p>
+<blockquote>
+<p>height = preferredHeight + (flexibleHeight / totalFlexibleHeight) * (realHeight - totalPreferredHeight)</p>
+</blockquote>
+<p><img src="/images/ccd93ef2ddc7b0e1bc7195b09cf19c115db9c635.png" alt="flexibleHeight示意图"></p>
+<p>弄清楚这些概念后，我们再看一下文章开头的例子。<br>button1的flexibleHeight=0.3，button2的flexibleHeight=0.1，minHeight和preferredHeight都没有设置，按道理高度应该分别是75、25。为什么会出现70、30？</p>
+<p>查一下ILayoutElement的实现类<br><img src="/images/662905a043156155048c7bc0a31350a03da13331.png" alt="ILayoutElement实现类"></p>
+<p>发现Image和Text实现了ILayoutElement，而我们的按钮中默认是有一个Image组件的，用脚本获取这个Image然后打印它的preferredHeight，发现等于10<br>再套用flexibleHeight的计算公式：<br>Button1:10 + 0.3/0.4 <em> (100 - 20) = 70<br>Button2:10 + 0.1/0.4 </em> (100 - 20) = 30</p>
+<p>这里有个问题，一个GameObject上挂载两个ILayoutElement组件，是怎么决定用哪个的？这个可以在LayoutUtility.cs中找到答案：</p>
+<p>LayoutUtility.cs</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">float</span> <span class="title">GetLayoutProperty</span><span class="params">(RectTransform rect, System.Func&lt;ILayoutElement, <span class="keyword">float</span>&gt; property, <span class="keyword">float</span> defaultValue, <span class="keyword">out</span> ILayoutElement source)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    source = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">if</span> (rect == <span class="keyword">null</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">float</span> min = defaultValue;</span><br><span class="line">    <span class="keyword">int</span> maxPriority = System.Int32.MinValue;</span><br><span class="line">    <span class="keyword">var</span> components = ComponentListPool.Get();</span><br><span class="line">    rect.GetComponents(<span class="keyword">typeof</span>(ILayoutElement), components);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; components.Count; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">var</span> layoutComp = components[i] <span class="keyword">as</span> ILayoutElement;</span><br><span class="line">        <span class="keyword">if</span> (layoutComp <span class="keyword">is</span> Behaviour &amp;&amp; (!(layoutComp <span class="keyword">as</span> Behaviour).enabled || !(layoutComp <span class="keyword">as</span> Behaviour).isActiveAndEnabled))</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> priority = layoutComp.layoutPriority;</span><br><span class="line">        <span class="comment">// If this layout components has lower priority than a previously used, ignore it.</span></span><br><span class="line">        <span class="keyword">if</span> (priority &lt; maxPriority)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        <span class="keyword">float</span> prop = property(layoutComp);</span><br><span class="line">        <span class="comment">// If this layout property is set to a negative value, it means it should be ignored.</span></span><br><span class="line">        <span class="keyword">if</span> (prop &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// If this layout component has higher priority than all previous ones,</span></span><br><span class="line">        <span class="comment">// overwrite with this one's value.</span></span><br><span class="line">        <span class="keyword">if</span> (priority &gt; maxPriority)</span><br><span class="line">        &#123;</span><br><span class="line">            min = prop;</span><br><span class="line">            maxPriority = priority;</span><br><span class="line">            source = layoutComp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// If the layout component has the same priority as a previously used,</span></span><br><span class="line">        <span class="comment">// use the largest of the values with the same priority.</span></span><br><span class="line">        <span class="function"><span class="keyword">else</span> <span class="title">if</span> <span class="params">(prop &gt; min)</span></span><br><span class="line">        </span>&#123;</span><br><span class="line">            min = prop;</span><br><span class="line">            source = layoutComp;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ComponentListPool.Release(components);</span><br><span class="line">    <span class="keyword">return</span> min;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>原来LayoutElement有一个layoutPriority属性用来决定优先级，这个属性暂时还没有在编辑器中暴露，也许后续版本会加强这方面的能力。<br>AutoLayout系统会选用优先级最高的ILayoutElement里相应属性返回。Image和Text的优先级默认是0，LayoutElement默认优先级是1。所以正常情况会使用LayoutElement中的设置，但我们的例子中，LayoutElement没有设置preferredHeight，LayoutElement里布局相关的初始值都是-1，所以还是使用了Image的preferredHeight:10。</p>
+<p>【结语】<br>其实，只要官方文档描述详细一些，根本没必要浪费时间去查这个来龙去脉。这几天在学习swift，苹果人性化的Programming Guide加上iReader的配合，使得学习这门语言真是件轻松愉快的事情。相比之下，Unity简直是在虐待开发者。Unity、Unreal、Cryengine等最近也为争市场弄得头破血流，除了降价开源提供新特性之外，完善文档、降低门槛也是不容忽视的工作。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2015-04-13T02:42:35.000Z"><a href="/2015/04/13/Sublime-for-Unity3D/">Apr 13 2015</a></time>
       
       
@@ -404,20 +462,19 @@
     <header>
       
         <div class="icon"></div>
-        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Mar 24 2015</a></time>
       
       
   
-    <h1 class="title"><a href="/2015/03/24/Unity5-animator-changes/">Unity 5 过渡控制变化</a></h1>
+    <h1 class="title"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Unity 5动画系统问题</a></h1>
   
 
     </header>
     <div class="entry">
       
-        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
-<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
-<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
-<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
+        <h3 id="1-如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可">1.如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可</h3><h4 id="不会触发">不会触发</h4><p><img src="/images/c5868628369eb7755c4b133bed49a4b9e6428b03.jpg" alt="不会触发"></p>
+<h4 id="触发">触发</h4><p><img src="/images/d068f3cb1017fc8e3ed816b9f57dbf1f3f0bbb69.jpg" alt="触发"></p>
+<h3 id="2-_如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成">2. 如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成</h3><p><img src="/images/4729e5bafe4aec8d0563f06e97eb4df2efaebdaa.jpg" alt="延后一帧"></p>
 
       
     </div>
@@ -440,19 +497,20 @@
     <header>
       
         <div class="icon"></div>
-        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Mar 24 2015</a></time>
+        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
       
       
   
-    <h1 class="title"><a href="/2015/03/24/Unity-5-Mecanim-Animator-problem/">Unity 5动画系统问题</a></h1>
+    <h1 class="title"><a href="/2015/03/24/Unity5-animator-changes/">Unity 5 过渡控制变化</a></h1>
   
 
     </header>
     <div class="entry">
       
-        <h3 id="1-如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可">1.如果只有一帧，第一帧放置event基本上不会触发，event放的第二帧即可</h3><h4 id="不会触发">不会触发</h4><p><img src="/images/c5868628369eb7755c4b133bed49a4b9e6428b03.jpg" alt="不会触发"></p>
-<h4 id="触发">触发</h4><p><img src="/images/d068f3cb1017fc8e3ed816b9f57dbf1f3f0bbb69.jpg" alt="触发"></p>
-<h3 id="2-_如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成">2. 如果最后是暂停动画的控制，需要延后至少一帧才有保障，不然动画不一定播放完成</h3><p><img src="/images/4729e5bafe4aec8d0563f06e97eb4df2efaebdaa.jpg" alt="延后一帧"></p>
+        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
+<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
+<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
+<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
 
       
     </div>
@@ -507,53 +565,11 @@
 
 
   
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-03-19T10:54:39.000Z"><a href="/2015/03/19/Unity-BreakPoint/">Mar 19 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/03/19/Unity-BreakPoint/">Unity断点调试</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <p>有时候调试程序，断点信息可以很方便定位问题，Unity支持使用自带的MonoDevelop进行断点调试，但这个功能做的很不友好，经常Attach进程无响应。这里就记录一个成功率比较高的方法，避免浪费时间。</p>
-<ol>
-<li><p>打开Unity、MonoDevelop</p>
-</li>
-<li><p>在Unity中，Assets -&gt; Sync MonoDevelop Project</p>
-</li>
-<li><p>在MonoDevelop中，Run -&gt; Attach to Process…</p>
-</li>
-</ol>
-<p>选择Unity Editor (Unity)，点击Attach按钮  </p>
-<p><img src="/images/201503191901.png" alt=""></p>
-<p>这个经测试，不是每次都成功:（，如果无响应，那么请cmd+Q退出Unity和MonoDevelop，大侠请回到step1重新来过。</p>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  
 
   <nav id="pagination">
   
+  
+    <a href="/categories/Unity3D/page/2/" class="alignright next">下一頁</a>
   
   <div class="clearfix"></div>
 </nav>
@@ -571,7 +587,7 @@
   <h3 class="title">分類</h3>
   <ul class="entry">
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>10</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>11</small></li>
   
     <li><a href="/categories/python/">python</a><small>1</small></li>
   
@@ -591,6 +607,8 @@
   <ul class="entry">
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/AutoLayout/">AutoLayout</a><small>1</small></li>
   
     <li><a href="/tags/C/">C#</a><small>1</small></li>
   
