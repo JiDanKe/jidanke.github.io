@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>归档：2015 | JiDanKe</title>
+  <title>彙整：2015 | JiDanKe</title>
   <meta name="author" content="JiDanKe">
   
   <meta name="description" content="JiDanKe&#39;s Blog">
@@ -46,6 +46,173 @@
   <div id="content" class="inner">
     <div id="main-col" class="alignleft"><div id="wrapper">
 <h2 class="archive-title">2015</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-09-01T09:38:16.000Z"><a href="/2015/09/01/ulua-useage/">Sep 1 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/09/01/ulua-useage/">uLua的使用</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>举个例子，现在想在lua脚本中调用LevelManager来切换关卡，步骤如下：<br>1.在BindLua.cs中添加LevelManager</p>
+<figure class="highlight r"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">static BindType[] binds = new BindType[]</span><br><span class="line">&#123;</span><br><span class="line">    //<span class="keyword">...</span></span><br><span class="line">    _GT(typeof(LevelManager)),</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>2.等Unity3d编译完修改后，在Lua菜单中点击”Gen Lua Wrap Files”</p>
+<p><img src="/images/caf73540883f62eef3d2c5e24f5dfa4deaaf2bc9" alt="生成Wrap文件"></p>
+<p>3.Lua脚本中引用</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import <span class="string">"LevelManager"</span></span><br><span class="line"></span><br><span class="line">local levelMgr = LevelManager<span class="class">.Instance</span></span><br><span class="line">local nextLevel = levelMgr:<span class="function"><span class="title">GetNextLevel</span><span class="params">()</span></span></span><br><span class="line">levelMgr:<span class="function"><span class="title">LoadLevel</span><span class="params">(nextLevel)</span></span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-24T06:15:00.000Z"><a href="/2015/08/24/PureMVC-in-Unity-GUI/">Aug 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/08/24/PureMVC-in-Unity-GUI/">在 Unity 的 GUI 中使用 PureMVC</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="PureMVC">PureMVC</h1><p>PureMVC 是一个轻量级的应用框架，用于帮助开发者实现 MVC（模型、视图、控制器） 模式。PureMVC 框架最初是为 ActionScript 开发的，现在已经发展出了各种语言的版本，这其中也包括 C# 版本，这就意味可以把这个框架应用到 Unity 的游戏开发中。</p>
+<h2 id="PureMVC_的基本组件">PureMVC 的基本组件</h2><p>在 PureMVC 中提供了下面4种组件供开发者使用：</p>
+<ol>
+<li>Proxy。Proxy 对应于 MVC 中的 M，但是它不是真正的 Model，在 PureMVC 中我们是通过 Proxy 对象去使用 Model，这也就保证了 Model 的独立性。</li>
+<li>Meditor。Meditor 对应于 MVC 中的 V， 同样它也不是真正的 View，而是通过它来使用我们事先创建好的一些关于视图的一些接口。</li>
+<li>Command。Cammand 就是 MVC 中的 C，在 Command 里我们可以调用 Proxy 去和 Model 进行交互，大多数业务逻辑都应该在 Cammand 里完成。Command 是无状态的，他和其他的 Command 和 Meditor 之间的通信可以通过通知（Notification）的方式来进行。</li>
+<li>Facade。这可能是 PureMVC 中最重要的一个组件了，我们要通过它来初始化 Proxy、 Meditor、Command 以及绑定他们和对应的通知之间的关系。</li>
+</ol>
+<h1 id="在_Unity_中使用_PureMVC">在 Unity 中使用 PureMVC</h1><p>在网上的并没有找到比较好的 PureMVC C# 的教程，官方的文档也十分有限，所以就参考了一个 Java 版的教程做了下面的例子。在这个例子中主要关注 GUI ，而不是游戏逻辑。例子的内容很简单：点击按钮之后，在 Label 中显示 “Hello World!” 这句话。</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/08/24/PureMVC-in-Unity-GUI/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-19T06:15:00.000Z"><a href="/2015/08/19/texture-mapping-and-render-pipeline/">Aug 19 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/08/19/texture-mapping-and-render-pipeline/">从 Texture Maping 理解可编程的图形管线</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="Texture_Mapping">Texture Mapping</h1><p>在 Unity 3D 引擎中要渲染一个3D模型需要这样一些基本组件：<code>Mesh</code>、<code>Material</code>和<code>Shader</code>。其中<code>Mesh</code>能够表示模型的几何形状，在有了模型的几何形状之后游戏引擎就可以把<code>Material</code>渲染到模型表面。<code>Material</code>的表现效果则可以由着色器也就是<code>Shader</code>来控制。</p>
+<p>如果模型表面只需要渲染纯色，那么我们只需在着色器中得的块作色器（fragment shader）中返回模型表面每个像素点需要的颜色即可；但是如果想要把事先制作好的图片（也就是贴图）渲染到模型上就要相对复杂一些，因为模型表面每个像素点的颜色我们需要从贴图上获取，要准确地获取到颜色必须要把模型表面的像素点和贴图上的像素点对应起来，这个过程就叫做 Texture Mapping。</p>
+<p>在着色器的层面上 Texture Mapping 可以用下面这个简单的作色器表示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">Shader <span class="string">"Cg shader with single texture"</span> &#123;</span><br><span class="line">   Properties &#123;</span><br><span class="line">      _MainTex (<span class="string">"Texture Image"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125; </span><br><span class="line">         <span class="comment">// 要用来渲染模型的贴图</span></span><br><span class="line">   &#125;</span><br><span class="line">   SubShader &#123;</span><br><span class="line">      Pass &#123;    </span><br><span class="line">         CGPROGRAM</span><br><span class="line"> </span><br><span class="line">         <span class="preprocessor">#<span class="keyword">pragma</span> vertex vert  </span></span><br><span class="line">         <span class="preprocessor">#<span class="keyword">pragma</span> fragment frag </span></span><br><span class="line"> </span><br><span class="line">         uniform sampler2D _MainTex;    </span><br><span class="line"> </span><br><span class="line">         <span class="keyword">struct</span> vertexInput &#123;</span><br><span class="line">            float4 vertex : POSITION;</span><br><span class="line">            float4 texcoord : TEXCOORD0;</span><br><span class="line">         &#125;;</span><br><span class="line">         <span class="keyword">struct</span> vertexOutput &#123;</span><br><span class="line">            float4 pos : SV_POSITION;</span><br><span class="line">            float4 tex : TEXCOORD0;</span><br><span class="line">         &#125;;</span><br><span class="line"> </span><br><span class="line">         <span class="function">vertexOutput <span class="title">vert</span><span class="params">(vertexInput input)</span> </span><br><span class="line">         </span>&#123;</span><br><span class="line">            vertexOutput output;</span><br><span class="line"> </span><br><span class="line">            output.tex = input.texcoord;</span><br><span class="line">               <span class="comment">// 顶点在贴图坐标的坐标，也就是 UV 坐标 </span></span><br><span class="line">			   </span><br><span class="line">            output.pos = mul(UNITY_MATRIX_MVP, input.vertex);</span><br><span class="line">            <span class="keyword">return</span> output;</span><br><span class="line">         &#125;</span><br><span class="line">		 </span><br><span class="line">         <span class="function">float4 <span class="title">frag</span><span class="params">(vertexOutput input)</span> : COLOR</span><br><span class="line">         </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> tex2D(_MainTex, input.tex.xy);   </span><br><span class="line">               <span class="comment">// 根据模型表面像素点的 UV 坐标获取贴图上的颜色进行渲染</span></span><br><span class="line">         &#125;</span><br><span class="line"> </span><br><span class="line">         ENDCG</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的代码中我们可以看出，在顶点着色器中我们只是输入了顶点的 UV 坐标，但是在块着色器中却可以通过模型表面像素点的 UV 坐标来获取了贴图上颜色，至于这些像素点的 UV 坐标从何而来我们从代码上是看不出来的。原因是模型表面像素点的 UV  坐标的确定并不是通过在着色器中编程实现的，这个过程是由图形管线自动的完成的。那么这个过程是在什么时候完成的呢？这就需要去了解一下关于图形管线（Graphics Pipeline）的相关知识了。</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/08/19/texture-mapping-and-render-pipeline/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-12T09:50:57.000Z"><a href="/2015/08/12/Change-size-of-the-new-Unity-UI-RectTransform/">Aug 12 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/08/12/Change-size-of-the-new-Unity-UI-RectTransform/">Change size of the new Unity UI RectTransform</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>我们在开发过程中发现，要调整Unity UI元素的大小，RectTransform提供了sizeDelta属性可以用来动态修改RectTransform的大小，但同时我们也google到另外一个修改RectTransform大小的方法，方法如下：<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">SetRectTransformSize</span><span class="params">(RectTransform trans, Vector2 newSize)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    Vector2 oldSize = trans.rect.size;</span><br><span class="line">    Vector2 deltaSize = newSize - oldSize;</span><br><span class="line">    trans.offsetMin = trans.offsetMin - <span class="keyword">new</span> Vector2(deltaSize.x * trans.pivot.x, deltaSize.y * trans.pivot.y);</span><br><span class="line">    trans.offsetMax = trans.offsetMax + <span class="keyword">new</span> Vector2(deltaSize.x * (<span class="number">1</span>f - trans.pivot.x), deltaSize.y * (<span class="number">1</span>f - trans.pivot.y));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>那RectTransform.sizeDelta和这个自定义的SetRectTransformSize有没有差别？差别在哪儿？我们做了下实验来测试：<br>新建一个场景，放入四个按钮<br><img src="/images/1c74b2bca5f5c0036b0378fcd32e344e5c566cfe" alt=""></p>
+<p>其中deltaSize和resize按钮的Anchors四个点重合，deltaSizeWithCustomAnc和resizeWithCustomAnc按钮的四个点不重合<br><img src="/images/5d9d8a46a44dc8fb4ee9c19834300b129922d7f3" alt=""></p>
+<p><img src="/images/84092fd5bf56e4fa4b9cfbbe454b41180cacf693" alt=""></p>
+<p>然后挂载一个脚本，在点击change按钮的时候修改上边四个按钮的大小：<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> UnityEngine;</span><br><span class="line"><span class="keyword">using</span> System.Collections;</span><br><span class="line"><span class="keyword">using</span> UnityEngine.UI;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">ResizeTestController</span> : <span class="title">MonoBehaviour</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> RectTransform deltaSizeBtn;</span><br><span class="line">    <span class="keyword">public</span> RectTransform resizeBtn;</span><br><span class="line">    <span class="keyword">public</span> RectTransform deltaSizeDiffAncBtn;</span><br><span class="line">    <span class="keyword">public</span> RectTransform resizeDiffAncBtn;</span><br><span class="line"></span><br><span class="line">    Vector2 newSize =<span class="keyword">new</span> Vector2(<span class="number">300</span>f,<span class="number">50</span>f);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Change</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="comment">//Anchors在同一点的button</span></span><br><span class="line">        deltaSizeBtn.sizeDelta = newSize;</span><br><span class="line">        U3DUtils.SetRectTransformSize(resizeBtn, newSize);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//Anchors不在同一点的button</span></span><br><span class="line">        deltaSizeDiffAncBtn.sizeDelta = newSize;</span><br><span class="line">        U3DUtils.SetRectTransformSize(resizeDiffAncBtn, newSize);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>点击Change按钮后：<br><img src="/images/9bd9957157cb1c2e129b7d742347e66f3011ca3f" alt=""></p>
+<p>我们可以看到按钮deltaSizeWithCustomAnc的大小与众不同，说明sizeDelta属性的计算过程跟SetRectTransformSize是不一样的，Unity官方文档对sizeDelta的说明：<br><a href="http://docs.unity3d.com/462/Documentation/ScriptReference/RectTransform-sizeDelta.html" target="_blank" rel="external">RectTransform sizeDelta</a><br>大概意思是Anchors在同一点的时候，sizeDelta相当于设置长宽，但是Anchors不在同一点时，表示的只是比Anchors矩形大或者小多少。</p>
+<p>那么sizeDelta具体又是怎么转换到trans.offsetMin和trans.offsetMax的呢？<br><img src="/images/a372fb5139afc590951dc9ff6c6d38496b1cba11" alt=""><br>如上图，left  + right刚好是我们设置的300的-1倍：-300, top + bottom也是刚好-50（负数的意思是比Anchors矩形大；正数就是Anchors矩形内，就是比Anchros矩形小）。<br>那可以猜测（看源代码没找到sizeDelta最终计算的地方，😓）sizeDelta的计算方法是与anchors有关的，当然还与Pivot有关（可以自己测试下看看），写个模拟方法来验证下：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">SetRectTransformDeltaSize</span><span class="params">(RectTransform trans, Vector2 newSize)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> x = -newSize.x - trans.offsetMin.x + trans.offsetMax.x;</span><br><span class="line">    <span class="keyword">var</span> y = -newSize.y - trans.offsetMin.y + trans.offsetMax.y;</span><br><span class="line"></span><br><span class="line">    trans.offsetMin = <span class="keyword">new</span> Vector2( trans.offsetMin.x + trans.pivot.x * x, trans.offsetMin.y + trans.pivot.y * y);</span><br><span class="line">    trans.offsetMax = <span class="keyword">new</span> Vector2( -(-trans.offsetMax.x + (<span class="number">1</span>-trans.pivot.x) * x),-(-trans.offsetMax.y + (<span class="number">1</span>-trans.pivot.y) * y));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>直接看可能不容易明白是什么意思，不过根据Unity的文档我们知道sizeDelta表示的是RectTransformd对象矩形大小比Pivot矩形大或者小多少，那么RectTransform的Left和Right之和就等于sizeDelta.x的-1倍，再考虑pivot，可以得到一个计算公式:<br><figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">(Left + pivot.x *X)</span> + <span class="comment">(Right + (1-pivot.x)</span> * X) =  - sizeDelta.x</span><br></pre></td></tr></table></figure></p>
+<p>其中X是要求出的变量，转换下公式就是：<br><figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X =  - sizeDelta.x - <span class="keyword">Left</span> - <span class="keyword">Right</span></span><br></pre></td></tr></table></figure></p>
+<p>由于<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Left == trans<span class="class">.offsetMin</span><span class="class">.x</span></span><br><span class="line">Right == - trans<span class="class">.offsetMax</span><span class="class">.x</span></span><br></pre></td></tr></table></figure></p>
+<p>带入后<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X =  - sizeDelta<span class="class">.x</span> - trans<span class="class">.offsetMin</span><span class="class">.x</span> - (- trans<span class="class">.offsetMax</span><span class="class">.x</span>)</span><br></pre></td></tr></table></figure></p>
+<p>那么新的Left就是<br>Left + pivot.x <em>X<br>新的Right就是<br>Right + (1-pivot.x) </em> X<br>Right转回offsetMax.xx需要*-1</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
 
 
   
@@ -356,276 +523,11 @@
 
 
   
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-04-21T15:28:43.000Z"><a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/">Apr 21 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/">同步、异步与阻塞、非阻塞，UNIX I/O模型</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <h4 id="1_同步与异步">1 同步与异步</h4><p>同步和异步关注点是<strong>消息通信机制</strong> (synchronous communication/ asynchronous communication)，是一种编程模型。</p>
-<ul>
-<li><p>在同步模型下，由消息的处理者主动去等待消息的提供者。也就是说在发出一个“调用”后，在没有得到结果之前，该“调用”就不返回，但是一旦调用返回，就得到了返回值。</p>
-</li>
-<li><p>在异步模型下，由消息提供者来通知处理者可以提供需要的结果（通知机制由异步实现模型来保证）。也就是说在“调用”在发出后就立即返回了，不需要等待结果，换句话说，调用者不会立刻得到结果。“被调用者”有结果提供时会主动通知调用者（一般通过状态更新(如.NET APM)或者回调函数(如Node.js,Tornado)的形式）。</p>
-</li>
-</ul>
-<p>举个通俗的例子：</p>
-<blockquote>
-<p>你打电话问书店老板有没有《分布式系统》这本书，如果是同步通信机制，书店老板会说，“你稍等，我查一下”，然后开始查啊查，等查好了（可能是5秒，也可能是一天）告诉你结果（返回结果）。而异步通信机制，书店老板直接告诉你我查一下啊，查好了打电话给你，然后直接挂电话了（不返回结果）。然后查好了，他会主动打电话给你。在这里老板通过“回电”这种方式来回调。</p>
-</blockquote>
-<h4 id="2_阻塞与非阻塞">2 阻塞与非阻塞</h4><p>阻塞和非阻塞关注的是<strong>线程在等待调用结果（消息、结果）时的状态。</strong></p>
-<ul>
-<li><p>阻塞调用是指调用结果返回之前，当前线程做不了其他事情（<strong><em>被挂起或者自旋</em></strong>），调用线程只有在得到结果之后才会返回。</p>
-</li>
-<li><p>非阻塞调用指在不能立刻得到结果之前，该调用不会阻塞当前线程（例如返回一个结果代理对象或者错误码）。</p>
-</li>
-</ul>
-<p>还是上面的例子</p>
-<blockquote>
-<p>你打电话问书店老板有没有《分布式系统》这本书，你如果是阻塞式调用，你会一直把自己“挂起”，直到得到这本书有没有的结果，如果是非阻塞式调用，你不管老板有没有告诉你，你自己先一边去玩了， 当然你也要偶尔过几分钟check一下老板有没有返回结果。</p>
-</blockquote>
-<p><strong>在这里阻塞与非阻塞与是否同步异步无关</strong>，跟老板通过什么方式回答你结果无关。</p>
-<h4 id="3_UNIX_I/O模型">3 UNIX I/O模型</h4><p>在<a href="http://book.douban.com/subject/1500149/">《UNIX网络编程卷I》</a>第6章中定义如下几种I/O模型：</p>
-<ul>
-<li>阻塞式I/O模型（blocking I/O）</li>
-<li>非阻塞式I/O模型（noblocking I/O）</li>
-<li>I/O复用（mutiplexing， select/poll/epoll）</li>
-<li>信号驱动I/O（SIGIO)</li>
-<li>异步I/O（AIO）</li>
-</ul>
-<p>通常一个输入包括两个过程：</p>
-<ol>
-<li>等待数据准备好；</li>
-<li>从内核向进程空间复制数据。</li>
-</ol>
-<p>就socket的输入操作来说，第一步就是等待所有的数据从网络中达到。当所有分组到达时，它被复制到内核中的某个缓冲区。第二步就是把数据从缓冲区复制到应用的进程缓冲区。</p>
-      
-    </div>
-    <footer>
-      
-        
-          <div class="alignleft">
-            <a href="/2015/04/21/synchronous-asynchronous-blocking-nonblocking/#more" class="more-link">Read More</a>
-          </div>
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-04-21T08:59:34.000Z"><a href="/2015/04/21/python-attribute-lookup/">Apr 21 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/04/21/python-attribute-lookup/">python属性查找</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <h4 id="1_摘要">1 摘要</h4><p>介绍python属性查找的相关基础知识，通过底层代码的分析，详细描述了python中对象属性的查找/赋值过程以及在object和type中对描述器的不同处理。并结合这些知识，简单探寻了一下描述器在python实现中的作用。</p>
-<h4 id="2_准备">2 准备</h4><p>在详解python属性查找之前，我们先来了解一些相关的概念，以便于理解整个查找过程。</p>
-<h5 id="2-1_描述器">2.1 描述器</h5><p>描述器(descriptor )是一个有 “绑定行为” 的对象属性(object attribute)，它的访问控制被描述器协议方法重写。描述器协议的方法为：</p>
-<pre><code>descr.__get__<span class="function"><span class="params">(self, obj, type=None)</span> --&gt;</span> value
-descr.__set__<span class="function"><span class="params">(self, obj, value)</span> --&gt;</span> None
-descr.__delete__<span class="function"><span class="params">(self, obj)</span> --&gt;</span> None
-</code></pre><p>一个对象具有其中任一个方法就会成为描述器，从而在被当作<strong>对象属性</strong>时重写默认的查找行为。</p>
-<p>如果一个对象同时定义了 <strong> __get__() </strong> 和 <strong> __set__()</strong> ,它叫做资料描述器(data descriptor)。仅定义了 <strong> __get__() </strong> 的描述器叫非资料描述器(non-data descriptor, 常用于方法，当然其他用途也是可以的)。</p>
-<p>资料描述器和非资料描述器的区别在于：相对于实例的字典的优先级。如果实例字典中有与描述器同名的属性，如果描述器是资料描述器，优先使用资料描述器，如果是非资料描述器，优先使用字典中的属性。后面内容会具体介绍。</p>
-<p>描述器是强大的，应用广泛的。描述器正是属性, 实例方法, 静态方法, 类方法和 super 的背后的实现机制。描述器在Python自身中广泛使用，以实现Python 2.2中引入的新式类。描述器简化了底层的C代码，并为Python的日常编程提供了一套灵活的新工具。</p>
-<h5 id="2-2_Python方法解析顺序">2.2 Python方法解析顺序</h5><p>在支持多重继承的编程语言中，查找方法具体来自那个类时的基类搜索顺序通常被称为方法解析顺序(Method Resolution Order)，简称MRO。Python中查找属性也遵循同一规则。对于仅支持单重继承的语言，MRO非常简单。但是在支持多继承的语言中，情况就比较复杂了。Python的历史版本中先后出现三种不同的MRO：经典方式、Python2.2 新式算法、Python2.3 新式算法(也称作C3)。Python 3中只保留了最后一种，即C3算法。</p>
-<p>python2.2为解决引入新类所带来的方法解析顺序，采用的方案是在类定义时就计算出它的MRO，并存储为该类对象的一个属性 <strong> __mro__ </strong> 。然后在查找属性时按照 <strong> __mro__ </strong> 依次搜索基类。</p>
-<h5 id="2-3_metaclass">2.3 metaclass</h5><p>在大多数编程语言中，类就是一组用来描述如何生成一个对象的代码段。Python中的类还远不止如此。在python中类同样也是一种对象，只要你使用关键字class，解释器在执行的时候就会创建一个对象。例如：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ObjectCreator</span><span class="params">(object)</span>:</span><span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
-<p>上面的代码会在python解释器执行的时候生成一个对象 <strong>ObjectCreator</strong>。<strong><em>这个对象（类）自身拥有创建对象（类实例）的能力，而这就是为什么它是一个类的原因。</em></strong> 创建 “类” 的 “类” 就是元类（metaclass），python默认的内建元类是type。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">&gt;&gt;&gt; </span>object.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(object)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br></pre></td></tr></table></figure>
-<p>在python中通过type(obj)，或者 obj.__class__ 来获取对象的类型（type）。这里有个特别的type的type是type。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(object)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type(type)</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>type.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br><span class="line"><span class="prompt">&gt;&gt;&gt; </span>object.__class__</span><br><span class="line">&lt;type <span class="string">'type'</span>&gt;</span><br></pre></td></tr></table></figure>
-<p>换句话说，元类（metaclass）的实例化是类（class），类（class）的实例化是类实例对象（object）。</p>
-      
-    </div>
-    <footer>
-      
-        
-          <div class="alignleft">
-            <a href="/2015/04/21/python-attribute-lookup/#more" class="more-link">Read More</a>
-          </div>
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-04-13T02:42:35.000Z"><a href="/2015/04/13/Sublime-for-Unity3D/">Apr 13 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/04/13/Sublime-for-Unity3D/">Unity3D使用Sublime作为编辑器</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <p>终于无法忍受MonoDeveloper的龟速，决心换一个工具作为Unity3D的代码编辑器。看身边的朋友开始用Sublime，清凉快速、自动补全、内置构建、配色丰富，总之一个字，酷！</p>
-<p>于是请教余老板给配置了个同样的环境，这里记录下过程，分享给大家。</p>
-<h1 id="环境要求：">环境要求：</h1><p>已安装Unity3D<br>已安装<a href="http://www.sublimetext.com/3" target="_blank" rel="external">Sublime Text 3</a></p>
-<h1 id="步骤一：给Sublime安装PackageControl">步骤一：给Sublime安装PackageControl</h1><p>具体方法见PackageControl的<a href="https://packagecontrol.io" target="_blank" rel="external">官方网站</a>，如果已安装请跳过。</p>
-<h1 id="步骤二：为Sublime安装OmniSharp插件">步骤二：为Sublime安装OmniSharp插件</h1><p>OmniSharp<strong>只支持Sublime Text 3</strong>，请在Package Control中进行安装。<br>在Sublime里按Cmd+Shift+P，输入“Install Package”，回车。在PackageControl的列表中搜索“OmniSharp”，进行安装。</p>
-<p>安装完后，菜单选择 Preferences &gt; Settings - More &gt; Syntax Specific - User</p>
-<p><img src="/images/4e00efe8f4c0be8ba100cf95a02bb048952cc12c.png" alt="OmniSharp设置.png"></p>
-<p>填入以下内容并保存</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    "<span class="attribute">auto_complete</span>": <span class="value"><span class="literal">true</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_selector</span>": <span class="value"><span class="string">"source - comment"</span></span>,</span><br><span class="line">    "<span class="attribute">auto_complete_triggers</span>": <span class="value">[ &#123;"<span class="attribute">selector</span>": <span class="value"><span class="string">"source.cs"</span></span>, "<span class="attribute">characters</span>": <span class="value"><span class="string">".&lt;"</span></span>&#125; ]</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="步骤三：为Sublime安装Unity3D_Build_System插件">步骤三：为Sublime安装Unity3D Build System插件</h1><p>经测试，通过Package Control安装的这个插件在Sublime Text 3里面有问题，具体表现为Sublime的Packages目录里相关文件没有被下载，囧。<br>不过我们可以手动安装，选择菜单：Sublime Text &gt; Preferences &gt; Browse Packages…<br>在这个目录里面运行<br>git clone <a href="">https://github.com/fredpointzero/UnityBuild.git</a> “Unity3D Build System”</p>
-<p>TIPS:后面必须加的”Unity3D Build System”参数，否则不能正常运行。</p>
-<h1 id="步骤四：设置Unity3D的默认编辑器为Sublime">步骤四：设置Unity3D的默认编辑器为Sublime</h1><p><img src="/images/9b3959bc0da7d1af66af6e97e2df46b137022bb9.png" alt="设置Unity3D的默认脚本编辑器.png"></p>
-<h1 id="步骤五：创建项目的Sublime工程文件">步骤五：创建项目的Sublime工程文件</h1><ol>
-<li><p>在Sublime中，选择菜单 File &gt; Open…<br>在文件选择对话框中，打开Unity3D项目的文件夹，这时Sublime左侧会有树形目录。</p>
-</li>
-<li><p>选择菜单 Project &gt; Save Project As…<br>将sublime-project文件保存到Unity3D相应项目的根目录，并以项目名称命名。<br>例如：Unity3D项目中.Net工程文件为TestProject.sln，则保存为TestProject.sublime-project。</p>
-<blockquote>
-<p>NOTE:这里有两个sln文件，一个是xxx.sln，另一个是xxx-csharp.sln，选用前者。</p>
-</blockquote>
-</li>
-<li><p>修改sublime-project内容<br>为了更好适配Unity3D开发，我们需要设置一下sublime工程文件。</p>
-</li>
-</ol>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    "<span class="attribute">folders</span>":</span><br><span class="line">    <span class="value">[</span><br><span class="line">        &#123;</span><br><span class="line">            "<span class="attribute">file_exclude_patterns</span>":</span><br><span class="line">            <span class="value">[</span><br><span class="line">                <span class="string">"*.dll"</span>,</span><br><span class="line">                <span class="string">"*.meta"</span>,</span><br><span class="line">                <span class="string">"*.asset"</span>,</span><br><span class="line">                <span class="string">"*.unity"</span>,</span><br><span class="line">                <span class="string">"*.ttf"</span>,</span><br><span class="line">                <span class="string">"*.pdf"</span>,</span><br><span class="line">                <span class="string">"*.unitypackage"</span>,</span><br><span class="line">                <span class="string">"*.mdb"</span>,</span><br><span class="line">                <span class="string">"*.prefab"</span>,</span><br><span class="line">                <span class="string">"*.ogg"</span>,</span><br><span class="line">                <span class="string">"*.controller"</span>,</span><br><span class="line">                <span class="string">"*.anim"</span>,</span><br><span class="line">                <span class="string">"*.jar"</span>,</span><br><span class="line">                <span class="string">".*"</span></span><br><span class="line">            ]</span>,</span><br><span class="line">            "<span class="attribute">folder_exclude_patterns</span>":</span><br><span class="line">            <span class="value">[</span><br><span class="line">                <span class="string">"Fonts"</span>,</span><br><span class="line">                <span class="string">"Materials"</span>,</span><br><span class="line">                <span class="string">"NGUIAtlas"</span>,</span><br><span class="line">                <span class="string">"Prefabs"</span>,</span><br><span class="line">                <span class="string">"StreamingAssets"</span>,</span><br><span class="line">                <span class="string">"Images"</span>,</span><br><span class="line">                <span class="string">"Scenes"</span>,</span><br><span class="line">                <span class="string">".*"</span></span><br><span class="line">            ]</span>,</span><br><span class="line">            "<span class="attribute">path</span>": <span class="value"><span class="string">"Assets"</span></span>,</span><br><span class="line">            "<span class="attribute">follow_symlinks</span>": <span class="value"><span class="literal">true</span></span><br><span class="line">        </span>&#125;</span><br><span class="line">    ]</span>,</span><br><span class="line">    "<span class="attribute">solution_file</span>": <span class="value"><span class="string">"./TestProject.sln"</span></span><br><span class="line"></span>&#125;</span><br></pre></td></tr></table></figure>
-<p>将其中的TestProject.sln改为你的工程文件名。以后双击这个sublime工程文件就可以用Sublime打开工程。</p>
-<h1 id="步骤六：配置快捷键">步骤六：配置快捷键</h1><p>代码跳转等功能会比较常用，我们把快捷键配置成和MonoDeveloper中一样。<br>选择菜单：Sublime Text &gt; Package Settings &gt; OmniSharp &gt; KeyBindings User，替换成以下内容并保存(感谢余老板提供：）)。</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_go_to_definition"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+d"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_rename"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_find_usages"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"shift+super+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_format_document"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+k"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_code_actions"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+enter"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_new_file"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+alt+ctrl+c"</span>]</span>, "<span class="attribute">args</span>":<span class="value">&#123;"<span class="attribute">paths</span>": <span class="value">[]</span>&#125;</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_new_file"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+alt+ctrl+i"</span>]</span>, "<span class="attribute">args</span>":<span class="value">&#123;"<span class="attribute">tmpltype</span>":<span class="value"><span class="string">"interface"</span></span>,"<span class="attribute">paths</span>": <span class="value">[]</span>&#125;</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_hide_panel"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+x"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_show_panel"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+z"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_type_lookup"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"alt+`"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_run_unit_tests"</span></span>, "<span class="attribute">keys</span>":<span class="value">[<span class="string">"ctrl+shift+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_build_project"</span></span>, "<span class="attribute">keys</span>":<span class="value">[<span class="string">"super+alt+b"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_reload_solution"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"super+option+r"</span>]</span>&#125;,</span><br><span class="line">    &#123;"<span class="attribute">command</span>": <span class="value"><span class="string">"omni_sharp_fix_usings"</span></span>, "<span class="attribute">keys</span>": <span class="value">[<span class="string">"option+super+u"</span>]</span>&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p>经过以上步骤，Sublime for Unity3D的环境就搭建完成，请自行试一下自动补全、编译等功能是否OK。这样除了断点调试，可以把MonoDeveloper晾一边了:P</p>
-<blockquote>
-<p>补充：第一次建立工程时，需要用MonoDeveloper来生成sln文件。</p>
-</blockquote>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-04-08T14:00:51.000Z"><a href="/2015/04/08/Glider/">Apr 8 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/04/08/Glider/">如何解决Unity3D协同开发的问题？</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <p>Unity3D中场景文件的内容组织方式本身决定了冲突合并是个头疼的问题，这个只能等Unity3D官方来解决。在此之前，我们还是需要面对这个问题，Glider便是一个剑走偏锋的解决方案。</p>
-<p><img src="/images/962f92bca51052d16c41fe76c43a6b187e4a97f5.png" alt="Glider"></p>
-<p>Glider是为Unity3D开发的一个动态模块管理插件，几个意思呢？</p>
-<p>她的诞生主要为了解决以下问题：</p>
-<ol>
-<li><p>场景文件合并困难，如何能让多人协同编辑同一个场景的内容时避免冲突？</p>
-</li>
-<li><p>场景中关联不大的模块，偶尔需要互相引用。如何获取这些对象而不耦合？</p>
-</li>
-<li><p>MonoBehaviour只有Awake()、Start()两个时机做脚本的初始化，如何解决模块加载顺序问题？</p>
-</li>
-<li><p>场景能否放手交给美术同学来编辑，逻辑组件、UI能否动态加载？</p>
-</li>
-</ol>
-<h1 id="核心思想">核心思想</h1><p>Glider使用<strong>动态加载</strong>的思想来解决如上问题，不同人员可以将场景中某一个部分做成Prefab，通过一定规则动态加载到场景中。加载过程中，将可能会被其他模块使用到的对象放到“对象仓库”中。加载过程交由Glider来控制，各模块能收到加载完成的通知。</p>
-<h1 id="特性">特性</h1><ul>
-<li>支持动态加载UI，彻底分离UI与场景，可兼容各种UI框架(uGUI、NGUI、Toolkit2D等)，目前已支持uGUI</li>
-<li>可扩展，如果你喜欢可以将所有游戏对象做成动态模块进行加载</li>
-<li>统一对象仓库，方便组件之间互相通讯</li>
-</ul>
-<h1 id="运行环境">运行环境</h1><ul>
-<li>Unity3D 5.0及以上版本</li>
-</ul>
-<h1 id="主要模块">主要模块</h1><h4 id="SceneController">SceneController</h4><p>场景管理器，提供方便的方法来加载UI、访问对象仓库。</p>
-<h4 id="IDynamicModuleManager">IDynamicModuleManager</h4><p>动态模块管理器，负责注册模块(IDynamicModule)，并通知相关事件。</p>
-<h4 id="IElementCenter">IElementCenter</h4><p>对象仓库，目前实现类为WeakReferenceElementCenter，提供对象的存取接口。</p>
-<h4 id="UIModuleManager">UIModuleManager</h4><p>UI管理器，实现IDynamicModule接口，在SceneController中作为一个默认的模块加载。</p>
-<h1 id="如何使用动态UI">如何使用动态UI</h1><p>加载一个动态UI，可以使用SceneController.LoadUIWithDescription(string uiDesFilePath)方法，其中uiDesFilePath指向的是UI描述的配置，其内容如下：</p>
-<p>文件：MazeUI.txt<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	"<span class="attribute">Prefab</span>": <span class="value"><span class="string">""</span></span>,</span><br><span class="line">	"<span class="attribute">CanvasPrefab</span>": <span class="value"><span class="string">"Maze/MazeCanvasWrapper"</span></span>,</span><br><span class="line">	"<span class="attribute">Children</span>": <span class="value">[</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/HpDisplayPanel"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/BagPanel"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/GameOverPanel"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/Header"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/SkillCtrPanel"</span></span>,</span><br><span class="line">		&#125;</span><br><span class="line">	]</span><br><span class="line"></span>&#125;</span><br></pre></td></tr></table></figure></p>
-<p>这个配置将会解析成UIDescription对象，里面的UI节点会解析成UINode对象。UINode代表的UIPrefab默认会被加载到父节点中。</p>
-<p>UIModuleManager加载UI时，有一些约定：  </p>
-<ol>
-<li><p>制作UIPrefab的粒度，建议控制在Panel层面。例如一个弹窗界面，按钮、标题、文字内容等逻辑比较相关，做成一个Prefab会方便不少，虽然Glider能够支持更细的粒度(如果你有特殊需求的话)。</p>
-</li>
-<li><p>目录约定。UIPrefabs需要放到”Resources/UIPrefabs/“目录下，UI配置文件需要放在”Resources/UIPrefabs/“目录下。例如：<br>DynamicUI/<br>　　Resources/<br>　　　　UIDescriptions/<br>　　　　　　MazeUI.txt<br>　　　　UIPrefabs/<br>　　　　　　Maze/<br>　　　　　　　　HpDisplayPanel.prefab<br>　　　　　　　　BagPanel.prefab<br>　　　　　　　　MazeCanvasWrapper.prefab<br>　　　　　　　　……  </p>
-</li>
-</ol>
-<h1 id="示例">示例</h1><p>这里我们简单描述怎样通过配置来加载一个UI</p>
-<p>在场景中创建一个EmptyObject，为其添加SceneController脚本，”UI Name”中填写”MazeUI”。</p>
-<p>在Resources/UIDescriptions/MazeUI.txt文件中，有如下内容<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	"<span class="attribute">Prefab</span>": <span class="value"><span class="string">""</span></span>,</span><br><span class="line">	"<span class="attribute">CanvasPrefab</span>": <span class="value"><span class="string">"Maze/MazeCanvasWrapper"</span></span>,</span><br><span class="line">	"<span class="attribute">Children</span>": <span class="value">[</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/HpDisplayPanel"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/BagPanel"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/GameOverPanel"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/Header"</span></span>,</span><br><span class="line">		&#125;,</span><br><span class="line">		&#123;</span><br><span class="line">			"<span class="attribute">Prefab</span>": <span class="value"><span class="string">"Maze/SkillCtrPanel"</span></span>,</span><br><span class="line">		&#125;</span><br><span class="line">	]</span><br><span class="line"></span>&#125;</span><br></pre></td></tr></table></figure></p>
-<p>其中Prefab表示创建的UIPrefab位置，这是一个相对于Resources/UIPrefabs/ 的路径。<br>运行场景，相应的UI加载到场景中。</p>
-<p>详情请参考仓库中的Demo</p>
-<h1 id="仓库地址">仓库地址</h1><p><a href="https://github.com/xclouder/glider.git" target="_blank" rel="external">https://github.com/xclouder/glider.git</a></p>
-<p>如果各位读者觉得这个插件有价值，欢迎一起优化改善，期待您的宝贵意见！</p>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  
 
   <nav id="pagination">
   
   
-    <a href="/archives/2015/page/2/" class="alignright next">下一页</a>
+    <a href="/archives/2015/page/2/" class="alignright next">下一頁</a>
   
   <div class="clearfix"></div>
 </nav>
@@ -633,19 +535,19 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
     <aside id="sidebar" class="alignright">
   <div class="search">
   <form action="//google.com/search" method="get" accept-charset="utf-8">
-    <input type="search" name="q" results="0" placeholder="搜索">
+    <input type="search" name="q" results="0" placeholder="搜尋">
     <input type="hidden" name="q" value="site:blog.jidanke.com">
   </form>
 </div>
 
   
 <div class="widget tag">
-  <h3 class="title">分类</h3>
+  <h3 class="title">分類</h3>
   <ul class="entry">
   
     <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>11</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>13</small></li>
   
     <li><a href="/categories/python/">python</a><small>1</small></li>
   
@@ -655,13 +557,15 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
   
     <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
   
+    <li><a href="/categories/计算机图形/">计算机图形</a><small>1</small></li>
+  
   </ul>
 </div>
 
 
   
 <div class="widget tag">
-  <h3 class="title">标签</h3>
+  <h3 class="title">標籤</h3>
   <ul class="entry">
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
@@ -683,6 +587,8 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
     <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
   
     <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/MVC/">MVC</a><small>1</small></li>
   
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
   
@@ -714,6 +620,8 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
   
     <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
   
+    <li><a href="/tags/lua/">lua</a><small>1</small></li>
+  
     <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
   
     <li><a href="/tags/poll/">poll</a><small>3</small></li>
@@ -741,6 +649,8 @@ descr.__delete__<span class="function"><span class="params">(self, obj)</span> -
     <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
   
     <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/计算机图形/">计算机图形</a><small>1</small></li>
   
     <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
   

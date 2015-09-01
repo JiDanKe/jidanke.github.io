@@ -55,6 +55,87 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2015-09-01T09:38:16.000Z"><a href="/2015/09/01/ulua-useage/">Sep 1 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/09/01/ulua-useage/">uLua的使用</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>举个例子，现在想在lua脚本中调用LevelManager来切换关卡，步骤如下：<br>1.在BindLua.cs中添加LevelManager</p>
+<figure class="highlight r"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">static BindType[] binds = new BindType[]</span><br><span class="line">&#123;</span><br><span class="line">    //<span class="keyword">...</span></span><br><span class="line">    _GT(typeof(LevelManager)),</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>2.等Unity3d编译完修改后，在Lua菜单中点击”Gen Lua Wrap Files”</p>
+<p><img src="/images/caf73540883f62eef3d2c5e24f5dfa4deaaf2bc9" alt="生成Wrap文件"></p>
+<p>3.Lua脚本中引用</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import <span class="string">"LevelManager"</span></span><br><span class="line"></span><br><span class="line">local levelMgr = LevelManager<span class="class">.Instance</span></span><br><span class="line">local nextLevel = levelMgr:<span class="function"><span class="title">GetNextLevel</span><span class="params">()</span></span></span><br><span class="line">levelMgr:<span class="function"><span class="title">LoadLevel</span><span class="params">(nextLevel)</span></span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-24T06:15:00.000Z"><a href="/2015/08/24/PureMVC-in-Unity-GUI/">Aug 24 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/08/24/PureMVC-in-Unity-GUI/">在 Unity 的 GUI 中使用 PureMVC</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="PureMVC">PureMVC</h1><p>PureMVC 是一个轻量级的应用框架，用于帮助开发者实现 MVC（模型、视图、控制器） 模式。PureMVC 框架最初是为 ActionScript 开发的，现在已经发展出了各种语言的版本，这其中也包括 C# 版本，这就意味可以把这个框架应用到 Unity 的游戏开发中。</p>
+<h2 id="PureMVC_的基本组件">PureMVC 的基本组件</h2><p>在 PureMVC 中提供了下面4种组件供开发者使用：</p>
+<ol>
+<li>Proxy。Proxy 对应于 MVC 中的 M，但是它不是真正的 Model，在 PureMVC 中我们是通过 Proxy 对象去使用 Model，这也就保证了 Model 的独立性。</li>
+<li>Meditor。Meditor 对应于 MVC 中的 V， 同样它也不是真正的 View，而是通过它来使用我们事先创建好的一些关于视图的一些接口。</li>
+<li>Command。Cammand 就是 MVC 中的 C，在 Command 里我们可以调用 Proxy 去和 Model 进行交互，大多数业务逻辑都应该在 Cammand 里完成。Command 是无状态的，他和其他的 Command 和 Meditor 之间的通信可以通过通知（Notification）的方式来进行。</li>
+<li>Facade。这可能是 PureMVC 中最重要的一个组件了，我们要通过它来初始化 Proxy、 Meditor、Command 以及绑定他们和对应的通知之间的关系。</li>
+</ol>
+<h1 id="在_Unity_中使用_PureMVC">在 Unity 中使用 PureMVC</h1><p>在网上的并没有找到比较好的 PureMVC C# 的教程，官方的文档也十分有限，所以就参考了一个 Java 版的教程做了下面的例子。在这个例子中主要关注 GUI ，而不是游戏逻辑。例子的内容很简单：点击按钮之后，在 Label 中显示 “Hello World!” 这句话。</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/08/24/PureMVC-in-Unity-GUI/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2015-07-07T12:39:12.000Z"><a href="/2015/07/07/uGUI-AugoLayout/">Jul 7 2015</a></time>
       
       
@@ -491,85 +572,11 @@
 
 
   
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-03-24T02:12:09.000Z"><a href="/2015/03/24/Unity5-animator-changes/">Mar 24 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/03/24/Unity5-animator-changes/">Unity 5 过渡控制变化</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <h1 id="过渡控制变换">过渡控制变换</h1><p>Unity 5默认给状态机连线生成的过渡时间是不一定的，跟动画时间有关，但是似乎都不是在当前状态机结束再切换到下一个状态，自动生成的过度时间都有比较严重的交叠，或者某个状态机重复多次才进入下一个状态。<br>可以使用如下图所示的reset 重置到一个Unity5默认的过渡时间设置。   </p>
-<p><img src="/images/6ffc27e54a23f87b096dbce889ff8403ac8ade17.png" alt="Paste_Image.png">  </p>
-<p>reset得到的应该是0.9和0.1，也就是在当前状态播放到90%的时候开始同时播放下一个状态机。而这个默认值在Unity 4.x里边是 1.0和0，也就是默认不会在两个状态间留0.1的过渡时间。如果在Unity 5里边改成1.0和0 也会有问题，如果当前状态最后一帧有event，经常会发生这个event不被调用。</p>
-<p><img src="/images/f06c804ce2654d65ac85041ba793e3a89561cc47.png" alt="Paste_Image.png"></p>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  
-    <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2015-03-20T06:58:00.000Z"><a href="/2015/03/20/differenceBetweenCircleCastandOverlapCircle/">Mar 20 2015</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2015/03/20/differenceBetweenCircleCastandOverlapCircle/">检测获取圆形区域内的collider对象</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <p>今天重构了下玩家的技能攻击实现类，把之前攻击时直接获取场景中的所有敌人再判读是否在攻击范围内来过滤改为直接获取技能攻击半径内的地方对象。由于检测两点之间是否有障碍物的时候用了：</p>
-<figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RaycastHit2D[] rayHits = Physics2D.LinecastAll (<span class="keyword">me</span>.position, target.position, mask);</span><br></pre></td></tr></table></figure>
-<p>最开始理所当然就认为 Physics2D.CircleCastAll 应该就是检测圆形范围内的碰撞器，以至于最开始看Physics2D.CircleCastAll的参数很不理解。事实上我需要的是Physics2D.OverlapCircleAll 。</p>
-<h3 id="一、获取在一个圆的半径范围内的collider">一、获取在一个圆的半径范围内的collider</h3><figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Collider<span class="number">2</span>D [] colliders = Physics<span class="number">2</span>D.OverlapCircleAll<span class="comment">(player.position, 1f, enemyLayer)</span>;</span><br><span class="line"><span class="keyword">if</span><span class="comment">(colliders.Length &gt; 0)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// enemies within 1m of the player</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="二、_获取以一个点为中心的圆朝某个方向移动一定距离碰撞到的layer上的collider">二、 获取以一个点为中心的圆朝某个方向移动一定距离碰撞到的layer上的collider</h3><figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">RaycastHit<span class="number">2</span>D[] hits=  Physics<span class="number">2</span>D.CircleCastAll<span class="comment">(player.position, 1f, player.right, 10f, enemyLayer)</span>;</span><br><span class="line">foreach<span class="comment">(RaycastHit2D hit in hits)</span></span><br><span class="line">&#123;</span><br><span class="line">	ApplyDamage<span class="comment">(hit.collider.gameObject)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="看图说话">看图说话</h3><p><img src="/images/24166795-E46D-45D3-A5A4-F7A75C266F50.jpg" alt="CircleCastAll and OverlapCircleAll"></p>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  
 
   <nav id="pagination">
   
   
-    <a href="/categories/Unity3D/page/2/" class="alignright next">下一页</a>
+    <a href="/categories/Unity3D/page/2/" class="alignright next">下一頁</a>
   
   <div class="clearfix"></div>
 </nav>
@@ -577,19 +584,19 @@
     <aside id="sidebar" class="alignright">
   <div class="search">
   <form action="//google.com/search" method="get" accept-charset="utf-8">
-    <input type="search" name="q" results="0" placeholder="搜索">
+    <input type="search" name="q" results="0" placeholder="搜尋">
     <input type="hidden" name="q" value="site:blog.jidanke.com">
   </form>
 </div>
 
   
 <div class="widget tag">
-  <h3 class="title">分类</h3>
+  <h3 class="title">分類</h3>
   <ul class="entry">
   
     <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
   
-    <li><a href="/categories/Unity3D/">Unity3D</a><small>11</small></li>
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>13</small></li>
   
     <li><a href="/categories/python/">python</a><small>1</small></li>
   
@@ -599,13 +606,15 @@
   
     <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
   
+    <li><a href="/categories/计算机图形/">计算机图形</a><small>1</small></li>
+  
   </ul>
 </div>
 
 
   
 <div class="widget tag">
-  <h3 class="title">标签</h3>
+  <h3 class="title">標籤</h3>
   <ul class="entry">
   
     <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
@@ -627,6 +636,8 @@
     <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
   
     <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/MVC/">MVC</a><small>1</small></li>
   
     <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
   
@@ -658,6 +669,8 @@
   
     <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
   
+    <li><a href="/tags/lua/">lua</a><small>1</small></li>
+  
     <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
   
     <li><a href="/tags/poll/">poll</a><small>3</small></li>
@@ -685,6 +698,8 @@
     <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
   
     <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/计算机图形/">计算机图形</a><small>1</small></li>
   
     <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
   

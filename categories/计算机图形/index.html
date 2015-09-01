@@ -1,0 +1,253 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>计算机图形 | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title category">计算机图形</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-19T06:15:00.000Z"><a href="/2015/08/19/texture-mapping-and-render-pipeline/">Aug 19 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/08/19/texture-mapping-and-render-pipeline/">从 Texture Maping 理解可编程的图形管线</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="Texture_Mapping">Texture Mapping</h1><p>在 Unity 3D 引擎中要渲染一个3D模型需要这样一些基本组件：<code>Mesh</code>、<code>Material</code>和<code>Shader</code>。其中<code>Mesh</code>能够表示模型的几何形状，在有了模型的几何形状之后游戏引擎就可以把<code>Material</code>渲染到模型表面。<code>Material</code>的表现效果则可以由着色器也就是<code>Shader</code>来控制。</p>
+<p>如果模型表面只需要渲染纯色，那么我们只需在着色器中得的块作色器（fragment shader）中返回模型表面每个像素点需要的颜色即可；但是如果想要把事先制作好的图片（也就是贴图）渲染到模型上就要相对复杂一些，因为模型表面每个像素点的颜色我们需要从贴图上获取，要准确地获取到颜色必须要把模型表面的像素点和贴图上的像素点对应起来，这个过程就叫做 Texture Mapping。</p>
+<p>在着色器的层面上 Texture Mapping 可以用下面这个简单的作色器表示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">Shader <span class="string">"Cg shader with single texture"</span> &#123;</span><br><span class="line">   Properties &#123;</span><br><span class="line">      _MainTex (<span class="string">"Texture Image"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125; </span><br><span class="line">         <span class="comment">// 要用来渲染模型的贴图</span></span><br><span class="line">   &#125;</span><br><span class="line">   SubShader &#123;</span><br><span class="line">      Pass &#123;    </span><br><span class="line">         CGPROGRAM</span><br><span class="line"> </span><br><span class="line">         <span class="preprocessor">#<span class="keyword">pragma</span> vertex vert  </span></span><br><span class="line">         <span class="preprocessor">#<span class="keyword">pragma</span> fragment frag </span></span><br><span class="line"> </span><br><span class="line">         uniform sampler2D _MainTex;    </span><br><span class="line"> </span><br><span class="line">         <span class="keyword">struct</span> vertexInput &#123;</span><br><span class="line">            float4 vertex : POSITION;</span><br><span class="line">            float4 texcoord : TEXCOORD0;</span><br><span class="line">         &#125;;</span><br><span class="line">         <span class="keyword">struct</span> vertexOutput &#123;</span><br><span class="line">            float4 pos : SV_POSITION;</span><br><span class="line">            float4 tex : TEXCOORD0;</span><br><span class="line">         &#125;;</span><br><span class="line"> </span><br><span class="line">         <span class="function">vertexOutput <span class="title">vert</span><span class="params">(vertexInput input)</span> </span><br><span class="line">         </span>&#123;</span><br><span class="line">            vertexOutput output;</span><br><span class="line"> </span><br><span class="line">            output.tex = input.texcoord;</span><br><span class="line">               <span class="comment">// 顶点在贴图坐标的坐标，也就是 UV 坐标 </span></span><br><span class="line">			   </span><br><span class="line">            output.pos = mul(UNITY_MATRIX_MVP, input.vertex);</span><br><span class="line">            <span class="keyword">return</span> output;</span><br><span class="line">         &#125;</span><br><span class="line">		 </span><br><span class="line">         <span class="function">float4 <span class="title">frag</span><span class="params">(vertexOutput input)</span> : COLOR</span><br><span class="line">         </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> tex2D(_MainTex, input.tex.xy);   </span><br><span class="line">               <span class="comment">// 根据模型表面像素点的 UV 坐标获取贴图上的颜色进行渲染</span></span><br><span class="line">         &#125;</span><br><span class="line"> </span><br><span class="line">         ENDCG</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的代码中我们可以看出，在顶点着色器中我们只是输入了顶点的 UV 坐标，但是在块着色器中却可以通过模型表面像素点的 UV 坐标来获取了贴图上颜色，至于这些像素点的 UV 坐标从何而来我们从代码上是看不出来的。原因是模型表面像素点的 UV  坐标的确定并不是通过在着色器中编程实现的，这个过程是由图形管线自动的完成的。那么这个过程是在什么时候完成的呢？这就需要去了解一下关于图形管线（Graphics Pipeline）的相关知识了。</p>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2015/08/19/texture-mapping-and-render-pipeline/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+
+  <nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav>
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>13</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+    <li><a href="/categories/计算机图形/">计算机图形</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/AutoLayout/">AutoLayout</a><small>1</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>2</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/CLR/">CLR</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/MVC/">MVC</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/lua/">lua</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/反射/">反射</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/泛型/">泛型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/计算机图形/">计算机图形</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

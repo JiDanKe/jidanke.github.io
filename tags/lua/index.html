@@ -1,0 +1,250 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>lua | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title tag">lua</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-09-01T09:38:16.000Z"><a href="/2015/09/01/ulua-useage/">Sep 1 2015</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/09/01/ulua-useage/">uLua的使用</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>举个例子，现在想在lua脚本中调用LevelManager来切换关卡，步骤如下：<br>1.在BindLua.cs中添加LevelManager</p>
+<figure class="highlight r"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">static BindType[] binds = new BindType[]</span><br><span class="line">&#123;</span><br><span class="line">    //<span class="keyword">...</span></span><br><span class="line">    _GT(typeof(LevelManager)),</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>2.等Unity3d编译完修改后，在Lua菜单中点击”Gen Lua Wrap Files”</p>
+<p><img src="/images/caf73540883f62eef3d2c5e24f5dfa4deaaf2bc9" alt="生成Wrap文件"></p>
+<p>3.Lua脚本中引用</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import <span class="string">"LevelManager"</span></span><br><span class="line"></span><br><span class="line">local levelMgr = LevelManager<span class="class">.Instance</span></span><br><span class="line">local nextLevel = levelMgr:<span class="function"><span class="title">GetNextLevel</span><span class="params">()</span></span></span><br><span class="line">levelMgr:<span class="function"><span class="title">LoadLevel</span><span class="params">(nextLevel)</span></span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+
+  <nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav>
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>13</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+    <li><a href="/categories/计算机图形/">计算机图形</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/AutoLayout/">AutoLayout</a><small>1</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>2</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/CLR/">CLR</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/MVC/">MVC</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/lua/">lua</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/反射/">反射</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/泛型/">泛型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/计算机图形/">计算机图形</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

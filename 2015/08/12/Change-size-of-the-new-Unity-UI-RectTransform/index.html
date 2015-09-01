@@ -1,0 +1,284 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Change size of the new Unity UI RectTransform | JiDanKe</title>
+  <meta name="author" content="JiDanKe">
+  
+  <meta name="description" content="JiDanKe&#39;s Blog">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Change size of the new Unity UI RectTransform"/>
+  <meta property="og:site_name" content="JiDanKe"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="JiDanKe" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">JiDanKe</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-08-12T09:50:57.000Z"><a href="/2015/08/12/Change-size-of-the-new-Unity-UI-RectTransform/">Aug 12 2015</a></time>
+      
+      
+  
+    <h1 class="title">Change size of the new Unity UI RectTransform</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>我们在开发过程中发现，要调整Unity UI元素的大小，RectTransform提供了sizeDelta属性可以用来动态修改RectTransform的大小，但同时我们也google到另外一个修改RectTransform大小的方法，方法如下：<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">SetRectTransformSize</span><span class="params">(RectTransform trans, Vector2 newSize)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    Vector2 oldSize = trans.rect.size;</span><br><span class="line">    Vector2 deltaSize = newSize - oldSize;</span><br><span class="line">    trans.offsetMin = trans.offsetMin - <span class="keyword">new</span> Vector2(deltaSize.x * trans.pivot.x, deltaSize.y * trans.pivot.y);</span><br><span class="line">    trans.offsetMax = trans.offsetMax + <span class="keyword">new</span> Vector2(deltaSize.x * (<span class="number">1</span>f - trans.pivot.x), deltaSize.y * (<span class="number">1</span>f - trans.pivot.y));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>那RectTransform.sizeDelta和这个自定义的SetRectTransformSize有没有差别？差别在哪儿？我们做了下实验来测试：<br>新建一个场景，放入四个按钮<br><img src="/images/1c74b2bca5f5c0036b0378fcd32e344e5c566cfe" alt=""></p>
+<p>其中deltaSize和resize按钮的Anchors四个点重合，deltaSizeWithCustomAnc和resizeWithCustomAnc按钮的四个点不重合<br><img src="/images/5d9d8a46a44dc8fb4ee9c19834300b129922d7f3" alt=""></p>
+<p><img src="/images/84092fd5bf56e4fa4b9cfbbe454b41180cacf693" alt=""></p>
+<p>然后挂载一个脚本，在点击change按钮的时候修改上边四个按钮的大小：<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> UnityEngine;</span><br><span class="line"><span class="keyword">using</span> System.Collections;</span><br><span class="line"><span class="keyword">using</span> UnityEngine.UI;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">ResizeTestController</span> : <span class="title">MonoBehaviour</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> RectTransform deltaSizeBtn;</span><br><span class="line">    <span class="keyword">public</span> RectTransform resizeBtn;</span><br><span class="line">    <span class="keyword">public</span> RectTransform deltaSizeDiffAncBtn;</span><br><span class="line">    <span class="keyword">public</span> RectTransform resizeDiffAncBtn;</span><br><span class="line"></span><br><span class="line">    Vector2 newSize =<span class="keyword">new</span> Vector2(<span class="number">300</span>f,<span class="number">50</span>f);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Change</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="comment">//Anchors在同一点的button</span></span><br><span class="line">        deltaSizeBtn.sizeDelta = newSize;</span><br><span class="line">        U3DUtils.SetRectTransformSize(resizeBtn, newSize);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//Anchors不在同一点的button</span></span><br><span class="line">        deltaSizeDiffAncBtn.sizeDelta = newSize;</span><br><span class="line">        U3DUtils.SetRectTransformSize(resizeDiffAncBtn, newSize);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>点击Change按钮后：<br><img src="/images/9bd9957157cb1c2e129b7d742347e66f3011ca3f" alt=""></p>
+<p>我们可以看到按钮deltaSizeWithCustomAnc的大小与众不同，说明sizeDelta属性的计算过程跟SetRectTransformSize是不一样的，Unity官方文档对sizeDelta的说明：<br><a href="http://docs.unity3d.com/462/Documentation/ScriptReference/RectTransform-sizeDelta.html" target="_blank" rel="external">RectTransform sizeDelta</a><br>大概意思是Anchors在同一点的时候，sizeDelta相当于设置长宽，但是Anchors不在同一点时，表示的只是比Anchors矩形大或者小多少。</p>
+<p>那么sizeDelta具体又是怎么转换到trans.offsetMin和trans.offsetMax的呢？<br><img src="/images/a372fb5139afc590951dc9ff6c6d38496b1cba11" alt=""><br>如上图，left  + right刚好是我们设置的300的-1倍：-300, top + bottom也是刚好-50（负数的意思是比Anchors矩形大；正数就是Anchors矩形内，就是比Anchros矩形小）。<br>那可以猜测（看源代码没找到sizeDelta最终计算的地方，😓）sizeDelta的计算方法是与anchors有关的，当然还与Pivot有关（可以自己测试下看看），写个模拟方法来验证下：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">SetRectTransformDeltaSize</span><span class="params">(RectTransform trans, Vector2 newSize)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> x = -newSize.x - trans.offsetMin.x + trans.offsetMax.x;</span><br><span class="line">    <span class="keyword">var</span> y = -newSize.y - trans.offsetMin.y + trans.offsetMax.y;</span><br><span class="line"></span><br><span class="line">    trans.offsetMin = <span class="keyword">new</span> Vector2( trans.offsetMin.x + trans.pivot.x * x, trans.offsetMin.y + trans.pivot.y * y);</span><br><span class="line">    trans.offsetMax = <span class="keyword">new</span> Vector2( -(-trans.offsetMax.x + (<span class="number">1</span>-trans.pivot.x) * x),-(-trans.offsetMax.y + (<span class="number">1</span>-trans.pivot.y) * y));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>直接看可能不容易明白是什么意思，不过根据Unity的文档我们知道sizeDelta表示的是RectTransformd对象矩形大小比Pivot矩形大或者小多少，那么RectTransform的Left和Right之和就等于sizeDelta.x的-1倍，再考虑pivot，可以得到一个计算公式:<br><figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">(Left + pivot.x *X)</span> + <span class="comment">(Right + (1-pivot.x)</span> * X) =  - sizeDelta.x</span><br></pre></td></tr></table></figure></p>
+<p>其中X是要求出的变量，转换下公式就是：<br><figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X =  - sizeDelta.x - <span class="keyword">Left</span> - <span class="keyword">Right</span></span><br></pre></td></tr></table></figure></p>
+<p>由于<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Left == trans<span class="class">.offsetMin</span><span class="class">.x</span></span><br><span class="line">Right == - trans<span class="class">.offsetMax</span><span class="class">.x</span></span><br></pre></td></tr></table></figure></p>
+<p>带入后<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X =  - sizeDelta<span class="class">.x</span> - trans<span class="class">.offsetMin</span><span class="class">.x</span> - (- trans<span class="class">.offsetMax</span><span class="class">.x</span>)</span><br></pre></td></tr></table></figure></p>
+<p>那么新的Left就是<br>Left + pivot.x <em>X<br>新的Right就是<br>Right + (1-pivot.x) </em> X<br>Right转回offsetMax.xx需要*-1</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://blog.jidanke.com/2015/08/12/Change-size-of-the-new-Unity-UI-RectTransform/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:blog.jidanke.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/C-基础/">C#基础</a><small>1</small></li>
+  
+    <li><a href="/categories/Unity3D/">Unity3D</a><small>13</small></li>
+  
+    <li><a href="/categories/python/">python</a><small>1</small></li>
+  
+    <li><a href="/categories/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/categories/服务端基础/">服务端基础</a><small>3</small></li>
+  
+    <li><a href="/categories/编程基础/">编程基础</a><small>1</small></li>
+  
+    <li><a href="/categories/计算机图形/">计算机图形</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Animator/">Animator</a><small>3</small></li>
+  
+    <li><a href="/tags/AutoLayout/">AutoLayout</a><small>1</small></li>
+  
+    <li><a href="/tags/C/">C#</a><small>2</small></li>
+  
+    <li><a href="/tags/C10K/">C10K</a><small>1</small></li>
+  
+    <li><a href="/tags/CLR/">CLR</a><small>1</small></li>
+  
+    <li><a href="/tags/Debug/">Debug</a><small>1</small></li>
+  
+    <li><a href="/tags/Glider/">Glider</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O-mutiplexing/">I/O mutiplexing</a><small>1</small></li>
+  
+    <li><a href="/tags/I-O复用/">I/O复用</a><small>1</small></li>
+  
+    <li><a href="/tags/MRO/">MRO</a><small>1</small></li>
+  
+    <li><a href="/tags/MVC/">MVC</a><small>1</small></li>
+  
+    <li><a href="/tags/Physics2D/">Physics2D</a><small>1</small></li>
+  
+    <li><a href="/tags/Sublime/">Sublime</a><small>1</small></li>
+  
+    <li><a href="/tags/UI/">UI</a><small>1</small></li>
+  
+    <li><a href="/tags/UNIX-I-O/">UNIX I/O</a><small>1</small></li>
+  
+    <li><a href="/tags/dict/">__dict__</a><small>1</small></li>
+  
+    <li><a href="/tags/slots/">__slots__</a><small>1</small></li>
+  
+    <li><a href="/tags/asynchronous/">asynchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/blocking/">blocking</a><small>2</small></li>
+  
+    <li><a href="/tags/closures/">closures</a><small>1</small></li>
+  
+    <li><a href="/tags/descriptor/">descriptor</a><small>1</small></li>
+  
+    <li><a href="/tags/epoll/">epoll</a><small>3</small></li>
+  
+    <li><a href="/tags/first-class/">first-class</a><small>1</small></li>
+  
+    <li><a href="/tags/ioloop/">ioloop</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>1</small></li>
+  
+    <li><a href="/tags/kqueue/">kqueue</a><small>1</small></li>
+  
+    <li><a href="/tags/lua/">lua</a><small>1</small></li>
+  
+    <li><a href="/tags/nonblocking/">nonblocking</a><small>2</small></li>
+  
+    <li><a href="/tags/poll/">poll</a><small>3</small></li>
+  
+    <li><a href="/tags/python/">python</a><small>3</small></li>
+  
+    <li><a href="/tags/select/">select</a><small>3</small></li>
+  
+    <li><a href="/tags/synchronous/">synchronous</a><small>1</small></li>
+  
+    <li><a href="/tags/tornado/">tornado</a><small>1</small></li>
+  
+    <li><a href="/tags/uGUI/">uGUI</a><small>1</small></li>
+  
+    <li><a href="/tags/函数对象/">函数对象</a><small>1</small></li>
+  
+    <li><a href="/tags/匿名函数/">匿名函数</a><small>1</small></li>
+  
+    <li><a href="/tags/反射/">反射</a><small>1</small></li>
+  
+    <li><a href="/tags/服务器模型/">服务器模型</a><small>1</small></li>
+  
+    <li><a href="/tags/泛型/">泛型</a><small>1</small></li>
+  
+    <li><a href="/tags/自由变量/">自由变量</a><small>1</small></li>
+  
+    <li><a href="/tags/规范/">规范</a><small>1</small></li>
+  
+    <li><a href="/tags/计算机图形/">计算机图形</a><small>1</small></li>
+  
+    <li><a href="/tags/闭包/">闭包</a><small>1</small></li>
+  
+    <li><a href="/tags/阻塞/">阻塞</a><small>1</small></li>
+  
+    <li><a href="/tags/非阻塞/">非阻塞</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 JiDanKe
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
